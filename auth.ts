@@ -30,19 +30,19 @@ export const {
     async signIn({ user, account }) {
       if (account?.provider !== 'credentials') return true
 
-      const existingUser = await getUserById(user.id!)
+      // const existingUser = await getUserById(user.id!)
 
-      if (!existingUser?.emailVerified) return false
+      // if (!existingUser?.emailVerified) return false
 
-      if (existingUser.isTwoFactorEnabled) {
-        const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(existingUser.id)
+      // if (existingUser.isTwoFactorEnabled) {
+      //   const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(existingUser.id)
 
-        if (!twoFactorConfirmation) return false
+      //   if (!twoFactorConfirmation) return false
 
-        await db.twoFactorConfirmation.delete({
-          where: { id: twoFactorConfirmation.id }
-        })
-      }
+      //   await db.twoFactorConfirmation.delete({
+      //     where: { id: twoFactorConfirmation.id }
+      //   })
+      // }
 
       return true
     },
