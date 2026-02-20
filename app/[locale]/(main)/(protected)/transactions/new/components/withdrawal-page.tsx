@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { WithdrawalForm } from './withdrawal-form';
 import { useRouter } from 'next/navigation';
+import { CryptoWithdrawalForm } from './crypto-withdrawal-form';
 
 interface UserImageType {
   id: string;
@@ -33,6 +34,7 @@ interface WithdrawalPageProps {
   userId?: string;
   userProfile?: UserProfileType;
   isBlocked?: boolean;
+  userBalance?: number;
 }
 
 export function WithdrawalPage({
@@ -41,7 +43,8 @@ export function WithdrawalPage({
   userImageStatus,
   userId,
   userProfile,
-  isBlocked = false
+  isBlocked = false,
+  userBalance = 0
 }: WithdrawalPageProps) {
   const router = useRouter();
   const t = useTranslations('Withdrawal');
@@ -243,7 +246,7 @@ export function WithdrawalPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <WithdrawalForm />
+          <CryptoWithdrawalForm userBalance={userBalance} />
         </CardContent>
       </Card>
     </div>

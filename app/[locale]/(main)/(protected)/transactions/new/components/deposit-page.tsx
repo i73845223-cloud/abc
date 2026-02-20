@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { DepositForm } from './deposit-form';
+import { CryptoDepositForm } from './crypto-deposit-form';
 
 interface UserImageType {
   id: string;
@@ -95,7 +96,7 @@ export function DepositPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DepositForm />
+          <CryptoDepositForm />
         </CardContent>
       </Card>
     </div>

@@ -468,7 +468,14 @@
     "maxFileSize": "Maximum file size: 5MB",
     "authRequired": "Authentication Required",
     "pleaseLogin": "Please log in to access this page",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "cryptoCurrency": "Cryptocurrency",
+    "selectCurrency": "Select currency",
+    "withdrawalAddress": "Withdrawal Address",
+    "enterCryptoAddress": "Enter the recipient's crypto address",
+    "addressDescription": "Make sure the address is correct and supports the selected currency.",
+    "enterCryptoDetails": "Enter the amount and destination address",
+"withdrawalError": "Withdrawal failed. Please try again."
   },
   "ImageUpload": {
     "title": "Document Upload",
@@ -532,7 +539,22 @@
     "birthDate": "Date of Birth",
     "city": "City",
     "email": "Email Address",
-    "button": "Deposit"
+    "button": "Deposit",
+    "cryptoCurrency": "Cryptocurrency",
+    "selectCurrency": "Select currency",
+    "generatePayment": "Generate Payment",
+    "completePayment": "Complete Payment",
+    "sendExactAmount": "Send the exact amount to the address below",
+    "amountToSend": "Amount to send",
+    "depositAddress": "Deposit Address",
+    "paymentInstructions": "Send the exact amount to this address. The deposit will be credited after network confirmations.",
+    "expires": "Expires",
+    "newDeposit": "New Deposit",
+    "copied": "Copied",
+    "addressCopied": "Address copied to clipboard",
+    "error": "Error",
+    "depositError": "Failed to create deposit. Please try again.",
+    "exchangeRateNote": "Exchange rate is locked at the time of payment generation."
   },
   "Footer": {
     "description": "Providing the best gaming experience with fair play and secure transactions",

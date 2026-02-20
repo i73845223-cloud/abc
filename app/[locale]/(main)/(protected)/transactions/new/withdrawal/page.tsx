@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { WithdrawalPage } from '../components/withdrawal-page';
 import { db } from '@/lib/db';
+import { calculateTotalBalance } from '@/lib/balance';
 
 export default async function Page() {
   const session = await auth();
@@ -36,6 +37,19 @@ export default async function Page() {
       return <WithdrawalPage showAuthRequired />;
     }
 
+    // Fetch user's transactions to calculate balance
+    const transactions = await db.transaction.findMany({
+      where: { userId: user.id },
+      select: {
+        amount: true,
+        type: true,
+        status: true,
+      },
+    });
+
+    const balanceInfo = calculateTotalBalance(transactions);
+    const userBalance = balanceInfo.available;
+
     const userProfile = {
       name: user.name,
       surname: user.surname,
@@ -59,6 +73,7 @@ export default async function Page() {
         userImageStatus={user.isImageApproved}
         userId={user.id}
         isBlocked={user.isBlocked}
+        userBalance={userBalance}
       />
     );
   } catch (error) {

@@ -467,7 +467,14 @@
     "maxFileSize": "अधिकतम फ़ाइल आकार: 5MB",
     "authRequired": "प्रमाणीकरण आवश्यक",
     "pleaseLogin": "कृपया इस पेज तक पहुंचने के लिए लॉग इन करें",
-    "signIn": "साइन इन करें"
+    "signIn": "साइन इन करें",
+    "cryptoCurrency": "क्रिप्टोकरेंसी",
+    "selectCurrency": "मुद्रा चुनें",
+    "withdrawalAddress": "निकासी पता",
+    "enterCryptoAddress": "प्राप्तकर्ता का क्रिप्टो पता दर्ज करें",
+    "addressDescription": "सुनिश्चित करें कि पता सही है और चयनित मुद्रा का समर्थन करता है।",
+    "enterCryptoDetails": "राशि और गंतव्य पता दर्ज करें",
+    "withdrawalError": "निकासी विफल। कृपया पुनः प्रयास करें।"
   },
   "ImageUpload": {
     "title": "दस्तावेज़ अपलोड",
@@ -531,7 +538,22 @@
     "birthDate": "जन्म तिथि",
     "city": "शहर",
     "email": "ईमेल पता",
-    "button": "जमा"
+    "button": "जमा",
+    "cryptoCurrency": "क्रिप्टोकरेंसी",
+    "selectCurrency": "मुद्रा चुनें",
+    "generatePayment": "भुगतान बनाएं",
+    "completePayment": "भुगतान पूरा करें",
+    "sendExactAmount": "नीचे दिए गए पते पर सटीक राशि भेजें",
+    "amountToSend": "भेजने की राशि",
+    "depositAddress": "जमा पता",
+    "paymentInstructions": "इस पते पर सटीक राशि भेजें। नेटवर्क पुष्टिकरण के बाद जमा राशि क्रेडिट हो जाएगी।",
+    "expires": "समाप्ति",
+    "newDeposit": "नई जमा",
+    "copied": "कॉपी हो गया",
+    "addressCopied": "पता क्लिपबोर्ड पर कॉपी किया गया",
+    "error": "त्रुटि",
+    "depositError": "जमा बनाने में विफल। कृपया पुनः प्रयास करें।",
+    "exchangeRateNote": "विनिमय दर भुगतान निर्माण के समय लॉक हो जाती है।"
   },
   "Footer": {
     "description": "निष्पक्ष खेल और सुरक्षित लेनदेन के साथ सर्वोत्तम गेमिंग अनुभव प्रदान करना।",
