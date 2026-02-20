@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,12 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, Copy, IndianRupee, Loader2, QrCode, Wallet } from 'lucide-react';
+import { AlertCircle, Copy, IndianRupee, Loader2, QrCode, Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 
 const depositSchema = z.object({
@@ -36,6 +35,53 @@ interface PaymentInfo {
   expiresAt: string;
 }
 
+const currencyOptions = [
+  { 
+    value: 'usdttrc20', 
+    display: 'USDT TRC20', 
+    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
+  },
+  { 
+    value: 'usdterc20', 
+    display: 'USDT ERC20', 
+    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'usdcerc20', 
+    display: 'USDC ERC20', 
+    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'usdcsol', 
+    display: 'USDC SOL', 
+    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+  },
+  { 
+    value: 'eth', 
+    display: 'ETH', 
+    tokenImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'btc', 
+    display: 'BTC', 
+    tokenImage: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png'
+  },
+  { 
+    value: 'sol', 
+    display: 'SOL', 
+    tokenImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+  },
+  { 
+    value: 'ltc', 
+    display: 'LTC', 
+    tokenImage: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
+  },
+];
+
 export function CryptoDepositForm() {
   const t = useTranslations('Deposit');
   const { toast } = useToast();
@@ -51,14 +97,7 @@ export function CryptoDepositForm() {
     },
   });
 
-  const quickAmounts = [500, 1000, 2000, 5000, 10000, 20000];
-  const cryptoCurrencies = [
-    { value: 'btc', label: 'Bitcoin (BTC)' },
-    { value: 'eth', label: 'Ethereum (ETH)' },
-    { value: 'usdttrc20', label: 'USDT (TRC20)' },
-    { value: 'ltc', label: 'Litecoin (LTC)' },
-    { value: 'sol', label: 'Solana (SOL)' },
-  ];
+  const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
   const handleAmountSuggestion = (amount: number) => {
     form.setValue('amountInr', amount.toString());
@@ -136,15 +175,12 @@ export function CryptoDepositForm() {
           </div>
 
           <div className="flex justify-center">
-            {paymentInfo.qrCode && (
-              <Image
-                src={paymentInfo.qrCode}
-                alt="Payment QR Code"
-                width={200}
-                height={200}
-                className="border rounded-lg"
-              />
-            )}
+            <QRCodeSVG
+              value={paymentInfo.address}
+              size={200}
+              level="H"
+              className="border rounded-lg"
+            />
           </div>
 
           <div className="space-y-2">
@@ -194,7 +230,7 @@ export function CryptoDepositForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {quickAmounts.map((amt) => (
                     <Button
                       key={amt}
@@ -213,11 +249,13 @@ export function CryptoDepositForm() {
                   <Input
                     placeholder={t('enterAmount')}
                     className="pl-10 h-12 text-lg"
+                    min={1000}
+                    max={100000}
                     {...field}
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {t('minAmount')}: ₹100 | {t('maxAmount')}: ₹50,000
+                  {t('minAmount')}: ₹ 1,000 | {t('maxAmount')}: ₹ 1,00,000
                 </p>
                 <FormMessage />
               </FormItem>
@@ -230,20 +268,41 @@ export function CryptoDepositForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-semibold">{t('cryptoCurrency')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder={t('selectCurrency')} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {cryptoCurrencies.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {currencyOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={field.value === option.value ? 'default' : 'outline'}
+                      className="h-auto py-3 flex flex-col items-center gap-1 px-2"
+                      onClick={() => field.onChange(option.value)}
+                    >
+                      <div className="relative w-10 h-10">
+                        <img
+                          src={option.tokenImage}
+                          alt={option.display}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
+                          }}
+                        />
+                        {option.networkImage && (
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
+                            <img
+                              src={option.networkImage}
+                              alt="network"
+                              className="w-full h-full object-contain bg-white rounded-full p-0.5"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium">{option.display}</span>
+                    </Button>
+                  ))}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -269,7 +328,7 @@ export function CryptoDepositForm() {
         </Button>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>{t('serviceFee')} 0.5%</p>
+          <p>{t('serviceFee')}</p>
           <p className="text-xs mt-2">{t('exchangeRateNote')}</p>
         </div>
       </form>

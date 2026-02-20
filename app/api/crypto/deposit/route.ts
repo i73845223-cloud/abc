@@ -71,6 +71,7 @@ export async function POST(req: Request) {
 
     BalanceCache.getInstance().invalidateCache(user.id);
 
+    console.log('NOWPayments payment response:', JSON.stringify(payment, null, 2));
     return NextResponse.json({
       paymentId: result.cryptoPayment.paymentId,
       address: result.cryptoPayment.payAddress,

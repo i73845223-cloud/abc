@@ -12,28 +12,25 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { amountInr, currency, address } = await req.json(); // amount in INR, crypto currency
+    const { amountInr, currency, address } = await req.json();
 
     if (!amountInr || amountInr <= 0 || !currency || !address) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
-    // Check user's balance (in INR)
     const balanceCache = BalanceCache.getInstance();
     const currentBalance = await balanceCache.getBalance(user.id);
     if (currentBalance < amountInr) {
       return new NextResponse('Insufficient funds', { status: 400 });
     }
 
-    // Convert INR → USD → crypto amount
     const usdAmount = await inrToUsd(amountInr);
     const cryptoAmount = await usdToCrypto(usdAmount, currency);
 
-    // Create withdrawal request record (store INR amount)
     const withdrawalRequest = await db.withdrawalRequest.create({
       data: {
         userId: user.id,
-        amount: amountInr,         // INR
+        amount: amountInr,       
         currency,
         address,
         baseAmount: amountInr,
@@ -42,7 +39,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create pending transaction (negative amount in INR)
     const transaction = await db.transaction.create({
       data: {
         userId: user.id,
@@ -59,7 +55,6 @@ export async function POST(req: Request) {
       data: { transactionId: transaction.id },
     });
 
-    // Call mass payout with crypto amount
     try {
       const payout = await createMassPayout([
         { address, currency, amount: cryptoAmount },
@@ -80,7 +75,6 @@ export async function POST(req: Request) {
         cryptoAmount,
       });
     } catch (payoutError) {
-      // If payout fails, mark as failed and refund
       console.error('[PAYOUT_ERROR]', payoutError);
       await db.$transaction([
         db.withdrawalRequest.update({

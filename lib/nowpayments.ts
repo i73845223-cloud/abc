@@ -46,7 +46,7 @@ export async function getJWTToken() {
 export async function createMassPayout(withdrawals: Array<{
   address: string;
   currency: string;
-  amount: number; // amount in crypto, NOT fiat
+  amount: number;
 }>) {
   const token = await getJWTToken();
   const response = await axios.post(
