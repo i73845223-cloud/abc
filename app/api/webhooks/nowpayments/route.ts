@@ -27,13 +27,11 @@ export async function POST(req: Request) {
       return new NextResponse('Payment not found', { status: 404 });
     }
 
-    // Update crypto payment status (for internal tracking)
     await db.cryptoPayment.update({
       where: { id: cryptoPayment.id },
       data: { status: mapNowPaymentsStatus(payment_status) },
     });
 
-    // Handle final states – update linked transaction
     if (cryptoPayment.transactionId) {
       if (payment_status === 'finished' && cryptoPayment.transaction?.status !== TransactionStatus.success) {
         await db.transaction.update({
