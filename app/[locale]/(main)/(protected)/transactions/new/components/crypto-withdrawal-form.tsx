@@ -6,10 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle2, Banknote, Loader2, Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -31,6 +29,54 @@ interface WithdrawalFormProps {
   minimumWithdrawal?: number;
 }
 
+// Currency options – same as deposit form, but you can filter if needed
+const currencyOptions = [
+  { 
+    value: 'usdttrc20', 
+    display: 'USDT TRC20', 
+    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
+  },
+  { 
+    value: 'usdterc20', 
+    display: 'USDT ERC20', 
+    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'usdcerc20', 
+    display: 'USDC ERC20', 
+    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'usdcsol', 
+    display: 'USDC SOL', 
+    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    networkImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+  },
+  { 
+    value: 'eth', 
+    display: 'ETH', 
+    tokenImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  },
+  { 
+    value: 'btc', 
+    display: 'BTC', 
+    tokenImage: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png'
+  },
+  { 
+    value: 'sol', 
+    display: 'SOL', 
+    tokenImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+  },
+  { 
+    value: 'ltc', 
+    display: 'LTC', 
+    tokenImage: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
+  },
+];
+
 export function CryptoWithdrawalForm({ 
   userBalance, 
   minimumWithdrawal = 100 
@@ -49,14 +95,6 @@ export function CryptoWithdrawalForm({
       address: '',
     },
   });
-
-  const cryptoCurrencies = [
-    { value: 'btc', label: 'Bitcoin (BTC)' },
-    { value: 'eth', label: 'Ethereum (ETH)' },
-    { value: 'usdttrc20', label: 'USDT (TRC20)' },
-    { value: 'ltc', label: 'Litecoin (LTC)' },
-    { value: 'sol', label: 'Solana (SOL)' },
-  ];
 
   const handleAmountSuggestion = (percentage: number) => {
     const suggestedAmount = (userBalance * percentage) / 100;
@@ -201,20 +239,41 @@ export function CryptoWithdrawalForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('cryptoCurrency')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('selectCurrency')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {cryptoCurrencies.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {currencyOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={field.value === option.value ? 'default' : 'outline'}
+                        className="h-auto py-3 flex flex-col items-center gap-1 px-2"
+                        onClick={() => field.onChange(option.value)}
+                      >
+                        <div className="relative w-10 h-10">
+                          <img
+                            src={option.tokenImage}
+                            alt={option.display}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
+                            }}
+                          />
+                          {option.networkImage && (
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
+                              <img
+                                src={option.networkImage}
+                                alt="network"
+                                className="w-full h-full object-contain bg-white rounded-full p-0.5"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium">{option.display}</span>
+                      </Button>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

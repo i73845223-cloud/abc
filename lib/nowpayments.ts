@@ -50,7 +50,7 @@ export async function createMassPayout(withdrawals: Array<{
 }>) {
   const token = await getJWTToken();
   const response = await axios.post(
-    `${BASE_URL}/payout/create`,
+    `${BASE_URL}/payout`,
     { withdrawals },
     {
       headers: {
