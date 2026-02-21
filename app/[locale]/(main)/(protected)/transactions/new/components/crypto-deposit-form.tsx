@@ -150,6 +150,43 @@ export function CryptoDepositForm() {
       description: t('addressCopied'),
     });
   };
+  
+  const generatePaymentURI = (info: PaymentInfo): string => {
+    const { address, amount, currency } = info;
+    
+    switch (currency.toLowerCase()) {
+      case 'btc':
+        return `bitcoin:${address}?amount=${amount}`;
+        
+      case 'eth':
+        const weiAmount = Math.floor(amount * 1e18);
+        return `ethereum:${address}?value=${weiAmount}`;
+        
+      case 'sol':
+        return `solana:${address}?amount=${amount}`;
+        
+      case 'usdttrc20':
+        const tronAmount = Math.floor(amount * 1e6);
+        return `tron:${address}?value=${tronAmount}&req-asset=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
+        
+      case 'usdterc20':
+        const erc20Amount = Math.floor(amount * 1e6);
+        return `ethereum:${address}?value=${erc20Amount}&req-asset=0xdac17f958d2ee523a2206206994597c13d831ec7`;
+        
+      case 'usdcerc20':
+        const usdcAmount = Math.floor(amount * 1e6);
+        return `ethereum:${address}?value=${usdcAmount}&req-asset=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`;
+        
+      case 'usdcsol':
+        return `solana:${address}?amount=${amount}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`;
+        
+      case 'ltc':
+        return `litecoin:${address}?amount=${amount}`;
+        
+      default:
+        return address;
+    }
+  };
 
   if (step === 'payment' && paymentInfo) {
     return (
@@ -176,7 +213,7 @@ export function CryptoDepositForm() {
 
           <div className="flex justify-center">
             <QRCodeSVG
-              value={paymentInfo.address}
+              value={generatePaymentURI(paymentInfo)}
               size={200}
               level="H"
               className="border rounded-lg"

@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     const data = JSON.parse(body);
     const { payment_id, payment_status } = data;
 
+    const paymentIdStr = payment_id.toString();
+
     const cryptoPayment = await db.cryptoPayment.findUnique({
-      where: { paymentId: payment_id },
+      where: { paymentId: paymentIdStr },
       include: { transaction: true },
     });
 
