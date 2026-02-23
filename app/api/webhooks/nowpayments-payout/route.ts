@@ -19,7 +19,9 @@ export async function POST(req: Request) {
     const data = JSON.parse(body);
     console.log('[PAYOUT_WEBHOOK] Received:', data);
 
-    const { id, batch_withdrawal_id, status } = data;
+    const { id, batch_withdrawal_id, status: rawStatus } = data;
+
+    const status = rawStatus?.toLowerCase();
 
     const withdrawal = await db.withdrawalRequest.findFirst({
       where: {
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
         newWithdrawalStatus = 'processing';
         break;
       default:
-        console.log(`[PAYOUT_WEBHOOK] Unhandled status: ${status}, leaving unchanged`);
+        console.log(`[PAYOUT_WEBHOOK] Unhandled status: ${rawStatus}, leaving unchanged`);
         break;
     }
 
