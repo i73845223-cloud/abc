@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { db } from '@/lib/db';
 import { BalanceCache } from '@/lib/cached-balance';
+import { TransactionStatus } from '@prisma/client';
 
 export async function POST(req: Request) {
   try {
@@ -11,13 +12,14 @@ export async function POST(req: Request) {
     const hmac = crypto.createHmac('sha512', process.env.NOWPAYMENTS_IPN_SECRET!);
     const digest = hmac.update(body).digest('hex');
     if (signature !== digest) {
+      console.error('[PAYOUT_WEBHOOK] Invalid signature');
       return new NextResponse('Invalid signature', { status: 401 });
     }
 
     const data = JSON.parse(body);
     console.log('[PAYOUT_WEBHOOK] Received:', data);
 
-    const { id, batch_withdrawal_id, status, address, currency, amount } = data;
+    const { id, batch_withdrawal_id, status } = data;
 
     const withdrawal = await db.withdrawalRequest.findFirst({
       where: {
@@ -45,18 +47,19 @@ export async function POST(req: Request) {
     switch (status) {
       case 'finished':
         newWithdrawalStatus = 'completed';
-        newTransactionStatus = 'success';
+        newTransactionStatus = TransactionStatus.success;
         break;
       case 'failed':
       case 'rejected':
         newWithdrawalStatus = 'failed';
-        newTransactionStatus = 'fail';
+        newTransactionStatus = TransactionStatus.fail;
         break;
       case 'processing':
       case 'sending':
         newWithdrawalStatus = 'processing';
         break;
       default:
+        console.log(`[PAYOUT_WEBHOOK] Unhandled status: ${status}, leaving unchanged`);
         break;
     }
 
@@ -76,7 +79,9 @@ export async function POST(req: Request) {
         BalanceCache.getInstance().invalidateCache(withdrawal.userId);
       }
 
-      console.log(`[PAYOUT_WEBHOOK] Updated withdrawal ${withdrawal.id} to ${newWithdrawalStatus}`);
+      console.log(`[PAYOUT_WEBHOOK] Updated withdrawal ${withdrawal.id} to ${newWithdrawalStatus} and transaction to ${newTransactionStatus}`);
+    } else {
+      console.log('[PAYOUT_WEBHOOK] No status change needed');
     }
 
     return NextResponse.json({ received: true });
