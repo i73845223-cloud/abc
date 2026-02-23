@@ -55,6 +55,7 @@ export async function createMassPayout(withdrawals: Array<{
     {
       headers: {
         Authorization: `Bearer ${token}`,
+        'x-api-key': process.env.NOWPAYMENTS_API_KEY,
         'Content-Type': 'application/json',
       },
     }
