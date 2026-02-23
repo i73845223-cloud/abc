@@ -76,9 +76,9 @@ const currencyOptions = [
     tokenImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
   },
   { 
-    value: 'ltc', 
-    display: 'LTC', 
-    tokenImage: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
+    value: 'trx', 
+    display: 'TRX', 
+    tokenImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
   },
 ];
 
@@ -165,6 +165,11 @@ export function CryptoDepositForm() {
       case 'sol':
         return `solana:${address}?amount=${amount}`;
         
+      case 'trx':
+        // TRX uses 6 decimal places (sun)
+        const sunAmount = Math.floor(amount * 1e6);
+        return `tron:${address}?amount=${sunAmount}`;
+        
       case 'usdttrc20':
         const tronAmount = Math.floor(amount * 1e6);
         return `tron:${address}?value=${tronAmount}&req-asset=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
@@ -179,9 +184,6 @@ export function CryptoDepositForm() {
         
       case 'usdcsol':
         return `solana:${address}?amount=${amount}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`;
-        
-      case 'ltc':
-        return `litecoin:${address}?amount=${amount}`;
         
       default:
         return address;

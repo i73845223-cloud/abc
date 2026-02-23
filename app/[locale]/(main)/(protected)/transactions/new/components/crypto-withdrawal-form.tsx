@@ -71,9 +71,9 @@ const currencyOptions = [
     tokenImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
   },
   { 
-    value: 'ltc', 
-    display: 'LTC', 
-    tokenImage: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
+    value: 'trx', 
+    display: 'TRX', 
+    tokenImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
   },
 ];
 
