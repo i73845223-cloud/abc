@@ -51,7 +51,10 @@ export async function createMassPayout(withdrawals: Array<{
   const token = await getJWTToken();
   const response = await axios.post(
     `${BASE_URL}/payout`,
-    { withdrawals },
+    {
+      withdrawals,
+      ipn_callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/nowpayments-payout`,
+    },
     {
       headers: {
         Authorization: `Bearer ${token}`,
