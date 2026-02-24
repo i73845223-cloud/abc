@@ -19,7 +19,8 @@ const depositSchema = z.object({
   amountInr: z.string()
     .min(1, 'amountRequired')
     .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'amountInvalid')
-    .refine((val) => parseFloat(val) >= 100, 'minimumAmount'),
+    .refine((val) => parseFloat(val) >= 1000, 'minimumAmount')
+    .refine((val) => parseFloat(val) <= 100000, 'maximumAmount'),
   currency: z.string().min(1, 'currencyRequired'),
 });
 
@@ -88,6 +89,7 @@ export function CryptoDepositForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'payment'>('form');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null); // inline error state
 
   const form = useForm<DepositFormValues>({
     resolver: zodResolver(depositSchema),
@@ -101,9 +103,11 @@ export function CryptoDepositForm() {
 
   const handleAmountSuggestion = (amount: number) => {
     form.setValue('amountInr', amount.toString());
+    form.trigger('amountInr');
   };
 
   const onSubmit = async (data: DepositFormValues) => {
+    setSubmitError(null);
     setIsLoading(true);
     try {
       const response = await fetch('/api/crypto/deposit', {
@@ -133,10 +137,23 @@ export function CryptoDepositForm() {
       setStep('payment');
     } catch (error) {
       console.error('Deposit error:', error);
+
+      let errorMessage = t('contactSupport');
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid currency') || error.message.includes('Currency not supported')) {
+          errorMessage = t('currencyNotSupported');
+        } else if (error.message.includes('Minimum deposit')) {
+          errorMessage = t('minimumAmount');
+        } else if (error.message.includes('Maximum deposit')) {
+          errorMessage = t('maximumAmount');
+        }
+      }
+
+      setSubmitError(errorMessage);
       toast({
         variant: 'destructive',
         title: t('error'),
-        description: t('depositError'),
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -166,7 +183,6 @@ export function CryptoDepositForm() {
         return `solana:${address}?amount=${amount}`;
         
       case 'trx':
-        // TRX uses 6 decimal places (sun)
         const sunAmount = Math.floor(amount * 1e6);
         return `tron:${address}?amount=${sunAmount}`;
         
@@ -348,10 +364,17 @@ export function CryptoDepositForm() {
           />
         </div>
 
+        {submitError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
+        )}
+
         <Button
           type="submit"
           className="w-full h-12 text-lg font-semibold"
-          disabled={isLoading}
+          disabled={isLoading || !form.formState.isValid}
         >
           {isLoading ? (
             <>
@@ -367,7 +390,6 @@ export function CryptoDepositForm() {
         </Button>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>{t('serviceFee')}</p>
           <p className="text-xs mt-2">{t('exchangeRateNote')}</p>
         </div>
       </form>

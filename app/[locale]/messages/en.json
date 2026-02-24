@@ -215,7 +215,7 @@
     "statusValues": {
       "success": "success",
       "pending": "pending",
-      "failed": "failed"
+      "fail": "failed"
     }
   },
   "SlotTransactions": {
@@ -238,7 +238,7 @@
     "statusValues": {
       "success": "success",
       "pending": "pending",
-      "failed": "failed"
+      "fail": "failed"
     }
   },
   "Settings": {
@@ -451,7 +451,7 @@
     "upiDescription": "Enter your UPI ID (e.g., yourname@oksbi)",
     "requestWithdrawal": "Request Withdrawal",
     "processing": "Processing...",
-    "withdrawalTerms": "Withdrawal requests are processed within 24-48 hours",
+    "withdrawalTerms": "Withdrawals are processed based on blockchain confirmation times. Actual transfer time may vary depending on network conditions",
     "withdrawalSuccess": "Withdrawal Request Successful!",
     "withdrawalSuccessDescription": "Your withdrawal request has been submitted successfully",
     "transactionId": "Transaction ID",
@@ -475,7 +475,13 @@
     "enterCryptoAddress": "Enter the recipient's crypto address",
     "addressDescription": "Make sure the address is correct and supports the selected currency.",
     "enterCryptoDetails": "Enter the amount and destination address",
-"withdrawalError": "Withdrawal failed. Please try again."
+    "withdrawalError": "Withdrawal failed. Please try again.",
+    "error": "Error",
+    "insufficientBalance": "Insufficient balance",
+    "currencyRequired": "Please select a currency",
+    "addressRequired": "Address is required",
+    "minAmount": "Min",
+    "maxAmount": "Max"
   },
   "ImageUpload": {
     "title": "Document Upload",
@@ -554,7 +560,13 @@
     "addressCopied": "Address copied to clipboard",
     "error": "Error",
     "depositError": "Failed to create deposit. Please try again.",
-    "exchangeRateNote": "Exchange rate is locked at the time of payment generation."
+    "exchangeRateNote": "Exchange rate is locked at the time of payment generation",
+    "currencyNotSupported": "Selected currency is not supported. Please choose another.",
+    "minimumAmount": "Minimum deposit amount is ₹1,000",
+    "maximumAmount": "Maximum deposit amount is ₹1,00,000",
+    "amountRequired": "Amount is required",
+    "amountInvalid": "Please enter a valid amount",
+    "currencyRequired": "Please select a currency"
   },
   "Footer": {
     "description": "Providing the best gaming experience with fair play and secure transactions",

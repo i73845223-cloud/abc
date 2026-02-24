@@ -60,17 +60,26 @@ export async function GET(req: Request) {
     });
 
     let netPending = 0;
+    let pendingWithdrawals = 0;
+
     pendingTransactions.forEach(transaction => {
       const amount = Number(transaction.amount);
-      netPending += transaction.type === 'deposit' ? amount : -amount;
+      if (transaction.type === 'deposit') {
+        netPending += amount;
+      } else {
+        netPending -= amount;
+        pendingWithdrawals += amount;
+      }
     });
+
+    const effectiveBalance = availableBalance - pendingWithdrawals;
 
     return NextResponse.json({ 
       transactions,
       balance: {
         available: availableBalance,
-        netPending, 
-        effective: availableBalance + netPending
+        netPending,
+        effective: effectiveBalance
       },
       pagination: {
         page,

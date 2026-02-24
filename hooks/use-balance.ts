@@ -22,7 +22,7 @@ export const useBalance = () => {
       const data = await response.json();
       setBalance(data.balance);
       
-      let displayText = formatter.format(data.balance.available);
+      let displayText = formatter.format(data.balance.effective);
       
       setFormattedBalance(displayText);
     } catch (error) {

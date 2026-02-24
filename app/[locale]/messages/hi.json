@@ -214,7 +214,7 @@
     "statusValues": {
       "success": "सफल",
       "pending": "लंबित",
-      "failed": "विफल"
+      "fail": "विफल"
     }
   },
   "SlotTransactions": {
@@ -237,7 +237,7 @@
     "statusValues": {
       "success": "सफल",
       "pending": "लंबित",
-      "failed": "विफल"
+      "fail": "विफल"
     }
   },
   "Settings": {
@@ -450,7 +450,7 @@
     "upiDescription": "अपनी यूपीआई आईडी दर्ज करें (जैसे, yourname@oksbi)",
     "requestWithdrawal": "निकासी अनुरोध करें",
     "processing": "प्रोसेसिंग...",
-    "withdrawalTerms": "निकासी अनुरोध 24-48 घंटों के भीतर प्रोसेस किए जाते हैं",
+    "withdrawalTerms": "निकासी ब्लॉकचेन पुष्टिकरण समय के अनुसार संसाधित की जाती है। नेटवर्क की स्थितियों के आधार पर वास्तविक स्थानांतरण समय भिन्न हो सकता है।",
     "withdrawalSuccess": "निकासी अनुरोध सफल!",
     "withdrawalSuccessDescription": "आपका निकासी अनुरोध सफलतापूर्वक सबमिट कर दिया गया है",
     "transactionId": "लेनदेन आईडी",
@@ -474,7 +474,13 @@
     "enterCryptoAddress": "प्राप्तकर्ता का क्रिप्टो पता दर्ज करें",
     "addressDescription": "सुनिश्चित करें कि पता सही है और चयनित मुद्रा का समर्थन करता है।",
     "enterCryptoDetails": "राशि और गंतव्य पता दर्ज करें",
-    "withdrawalError": "निकासी विफल। कृपया पुनः प्रयास करें।"
+    "withdrawalError": "निकासी विफल। कृपया पुनः प्रयास करें।",
+    "error": "त्रुटि",
+    "insufficientBalance": "अपर्याप्त शेष राशि",
+    "currencyRequired": "कृपया एक मुद्रा चुनें",
+    "addressRequired": "पता आवश्यक है",
+    "minAmount": "न्यूनतम",
+    "maxAmount": "अधिकतम"
   },
   "ImageUpload": {
     "title": "दस्तावेज़ अपलोड",
@@ -553,7 +559,13 @@
     "addressCopied": "पता क्लिपबोर्ड पर कॉपी किया गया",
     "error": "त्रुटि",
     "depositError": "जमा बनाने में विफल। कृपया पुनः प्रयास करें।",
-    "exchangeRateNote": "विनिमय दर भुगतान निर्माण के समय लॉक हो जाती है।"
+    "exchangeRateNote": "विनिमय दर भुगतान निर्माण के समय लॉक हो जाती है।",
+    "currencyNotSupported": "चयनित मुद्रा समर्थित नहीं है। कृपया दूसरी चुनें।",
+    "minimumAmount": "न्यूनतम जमा राशि ₹1,000 है",
+    "maximumAmount": "अधिकतम जमा राशि ₹1,00,000 है",
+    "amountRequired": "राशि आवश्यक है",
+    "amountInvalid": "कृपया एक मान्य राशि दर्ज करें",
+    "currencyRequired": "कृपया एक मुद्रा चुनें"
   },
   "Footer": {
     "description": "निष्पक्ष खेल और सुरक्षित लेनदेन के साथ सर्वोत्तम गेमिंग अनुभव प्रदान करना।",

@@ -37,7 +37,6 @@ export default async function Page() {
       return <WithdrawalPage showAuthRequired />;
     }
 
-    // Fetch user's transactions to calculate balance
     const transactions = await db.transaction.findMany({
       where: { userId: user.id },
       select: {
