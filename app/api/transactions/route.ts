@@ -72,7 +72,7 @@ export async function GET(req: Request) {
       }
     });
 
-    const effectiveBalance = availableBalance - pendingWithdrawals;
+    const effectiveBalance = availableBalance;
 
     return NextResponse.json({ 
       transactions,
