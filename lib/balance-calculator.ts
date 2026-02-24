@@ -1,28 +1,27 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/db'
 
 export async function calculateUserBalance(userId: string) {
-  const successful = await db.transaction.findMany({
-    where: { userId, status: 'success' },
-    select: { type: true, amount: true }
-  });
+  const [depositSum, withdrawalSum, pendingWithdrawals] = await Promise.all([
+    db.transaction.aggregate({
+      where: { userId, type: 'deposit', status: 'success' },
+      _sum: { amount: true }
+    }),
+    db.transaction.aggregate({
+      where: { userId, type: 'withdrawal', status: 'success' },
+      _sum: { amount: true }
+    }),
+    db.transaction.aggregate({
+      where: { userId, type: 'withdrawal', status: 'pending' },
+      _sum: { amount: true }
+    })
+  ]);
 
-  let totalDeposits = 0;
-  let totalWithdrawals = 0;
-  successful.forEach(tx => {
-    const amount = Number(tx.amount);
-    if (tx.type === 'deposit') totalDeposits += amount;
-    else if (tx.type === 'withdrawal') totalWithdrawals += amount;
-  });
+  const totalDeposits = Number(depositSum._sum.amount) || 0;
+  const totalWithdrawals = Number(withdrawalSum._sum.amount) || 0;
+  const pending = Number(pendingWithdrawals._sum.amount) || 0;
 
-  const pendingWithdrawalsAgg = await db.transaction.aggregate({
-    where: { userId, type: 'withdrawal', status: 'pending' },
-    _sum: { amount: true }
-  });
-  const pendingWithdrawals = Number(pendingWithdrawalsAgg._sum.amount) || 0;
-
-  return totalDeposits - totalWithdrawals - pendingWithdrawals;
+  return totalDeposits - totalWithdrawals - pending;
 }
-
 export async function calculateDetailedBalance(userId: string) {
   const [successful, pending] = await Promise.all([
     db.transaction.aggregate({

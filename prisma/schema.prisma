@@ -42,7 +42,6 @@ model User {
   influencerEarnings InfluencerEarning[] @relation("InfluencerEarnings")
   sourceEarnings     InfluencerEarning[] @relation("SourceUserEarnings")
 
-  // New relations for crypto payments and withdrawals
   cryptoPayments      CryptoPayment[]
   withdrawalRequests  WithdrawalRequest[]
 
@@ -146,11 +145,11 @@ model Transaction {
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   InfluencerEarning InfluencerEarning[]
 
-  // New relations for crypto payments/withdrawals
-  cryptoPayment     CryptoPayment?      // one-to-one with CryptoPayment
-  withdrawalRequest WithdrawalRequest?  // one-to-one with WithdrawalRequest
+  cryptoPayment     CryptoPayment?
+  withdrawalRequest WithdrawalRequest?
 
-  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, type, status])
 }
 
 model TransactionHistory {
