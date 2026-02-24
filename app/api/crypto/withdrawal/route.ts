@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { currentUser } from '@/lib/auth';
 import { createMassPayout } from '@/lib/nowpayments';
-import { inrToUsd } from '@/lib/currency-converter';
+import { inrToUsd, usdToCrypto } from '@/lib/currency-converter';
 import { BalanceCache } from '@/lib/cached-balance';
 
 export async function POST(req: Request) {
@@ -24,13 +24,15 @@ export async function POST(req: Request) {
       return new NextResponse('Insufficient funds', { status: 400 });
     }
 
+    // Convert INR → USD → target crypto amount
     const usdAmount = await inrToUsd(amountInr);
+    const cryptoAmount = await usdToCrypto(usdAmount, currency);
 
     const withdrawalRequest = await db.withdrawalRequest.create({
       data: {
         userId: user.id,
-        amount: amountInr,        
-        currency,                 
+        amount: amountInr,
+        currency,                     // user's selected target crypto
         address,
         baseAmount: amountInr,
         baseCurrency: 'INR',
@@ -55,13 +57,9 @@ export async function POST(req: Request) {
     });
 
     try {
+      // Send payout in target crypto – NOWPayments will convert from your USDT ERC balance
       const payout = await createMassPayout([
-        {
-          address,
-          currency,                     
-          fiat_amount: usdAmount,        
-          fiat_currency: 'usd',         
-        },
+        { address, currency, amount: cryptoAmount },
       ]);
 
       await db.withdrawalRequest.update({
@@ -76,7 +74,7 @@ export async function POST(req: Request) {
         withdrawalId: withdrawalRequest.id,
         payoutId: payout.id,
         amountInr: withdrawalRequest.amount,
-        currency,
+        cryptoAmount,
       });
     } catch (payoutError) {
       console.error('[PAYOUT_ERROR]', payoutError);

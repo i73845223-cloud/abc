@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_KEY = process.env.NOWPAYMENTS_API_KEY!;
-const BASE_URL = 'https://api.nowpayments.io/v1'; // https://api-sandbox.nowpayments.io/v1
+const BASE_URL = 'https://api.nowpayments.io/v1';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -43,24 +43,12 @@ export async function getJWTToken() {
   return response.data.token;
 }
 
-export async function createMassPayout(
-  withdrawals: Array<{
-    address: string;
-    currency: string;
-    amount?: number;          // optional – can use either amount or fiat_amount
-    fiat_amount?: number;     // optional, overrides amount if present
-    fiat_currency?: string;   // required if fiat_amount is used
-  }>
-) {
+export async function createMassPayout(withdrawals: Array<{
+  address: string;
+  currency: string;
+  amount: number;
+}>) {
   const token = await getJWTToken();
-
-  // Validate that if fiat_amount is provided, fiat_currency is also provided
-  for (const w of withdrawals) {
-    if (w.fiat_amount !== undefined && !w.fiat_currency) {
-      throw new Error('fiat_currency is required when fiat_amount is provided');
-    }
-  }
-
   const response = await axios.post(
     `${BASE_URL}/payout`,
     {
