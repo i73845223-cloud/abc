@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { currentUser } from '@/lib/auth';
 import { createMassPayout } from '@/lib/nowpayments';
-import { inrToUsd, usdToCrypto } from '@/lib/currency-converter';
+import { inrToUsd } from '@/lib/currency-converter';
 import { BalanceCache } from '@/lib/cached-balance';
 
 export async function POST(req: Request) {
@@ -25,13 +25,12 @@ export async function POST(req: Request) {
     }
 
     const usdAmount = await inrToUsd(amountInr);
-    const cryptoAmount = await usdToCrypto(usdAmount, currency);
 
     const withdrawalRequest = await db.withdrawalRequest.create({
       data: {
         userId: user.id,
-        amount: amountInr,       
-        currency,
+        amount: amountInr,        
+        currency,                 
         address,
         baseAmount: amountInr,
         baseCurrency: 'INR',
@@ -57,7 +56,12 @@ export async function POST(req: Request) {
 
     try {
       const payout = await createMassPayout([
-        { address, currency, amount: cryptoAmount },
+        {
+          address,
+          currency,                     
+          fiat_amount: usdAmount,        
+          fiat_currency: 'usd',         
+        },
       ]);
 
       await db.withdrawalRequest.update({
@@ -72,7 +76,7 @@ export async function POST(req: Request) {
         withdrawalId: withdrawalRequest.id,
         payoutId: payout.id,
         amountInr: withdrawalRequest.amount,
-        cryptoAmount,
+        currency,
       });
     } catch (payoutError) {
       console.error('[PAYOUT_ERROR]', payoutError);

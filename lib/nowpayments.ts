@@ -43,12 +43,24 @@ export async function getJWTToken() {
   return response.data.token;
 }
 
-export async function createMassPayout(withdrawals: Array<{
-  address: string;
-  currency: string;
-  amount: number;
-}>) {
+export async function createMassPayout(
+  withdrawals: Array<{
+    address: string;
+    currency: string;
+    amount?: number;          // optional – can use either amount or fiat_amount
+    fiat_amount?: number;     // optional, overrides amount if present
+    fiat_currency?: string;   // required if fiat_amount is used
+  }>
+) {
   const token = await getJWTToken();
+
+  // Validate that if fiat_amount is provided, fiat_currency is also provided
+  for (const w of withdrawals) {
+    if (w.fiat_amount !== undefined && !w.fiat_currency) {
+      throw new Error('fiat_currency is required when fiat_amount is provided');
+    }
+  }
+
   const response = await axios.post(
     `${BASE_URL}/payout`,
     {
