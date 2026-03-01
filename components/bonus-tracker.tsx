@@ -72,6 +72,15 @@ export function BonusTracker() {
     fetchUserPromoCodes();
   }, []);
 
+  // Listen for spin completion events to refresh bonuses
+  useEffect(() => {
+    const handleSpinCompleted = () => {
+      fetchBonuses();
+    };
+    window.addEventListener('spin-completed', handleSpinCompleted);
+    return () => window.removeEventListener('spin-completed', handleSpinCompleted);
+  }, []);
+
   const fetchBonuses = async () => {
     try {
       const response = await fetch('/api/bonuses');
@@ -348,7 +357,7 @@ export function BonusTracker() {
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">{t('progress.wagering')}</span>
                       <span className="text-white font-medium">
-                        {formatter.format(completedWagering / requiredWagering)}
+                        {formatter.format(completedWagering)} / {formatter.format(requiredWagering)}
                       </span>
                     </div>
                     <Progress 
@@ -424,16 +433,30 @@ export function BonusTracker() {
                   </div>
                 )}
 
-                {canWithdraw && (
-                  <Button 
-                    onClick={() => handleWithdrawBonus(bonus.id)}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                    size="lg"
-                  >
-                    <Wallet className="h-4 w-4 mr-2" />
-                    {t('buttons.withdraw', { amount: formatter.format(remainingAmount) })}
-                  </Button>
-                )}
+                {/* Withdraw button or completion badge */}
+                {(() => {
+                  const totalWithdrawable = remainingAmount + freeSpinsWinnings;
+                  if (totalWithdrawable <= 0) {
+                    return (
+                      <div className="w-full py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-center text-sm font-medium">
+                        ✓ Fully Withdrawn
+                      </div>
+                    );
+                  }
+                  if (canWithdraw) {
+                    return (
+                      <Button 
+                        onClick={() => handleWithdrawBonus(bonus.id)}
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                        size="lg"
+                      >
+                        <Wallet className="h-4 w-4 mr-2" />
+                        {t('buttons.withdraw', { amount: formatter.format(totalWithdrawable) })}
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
 
                 <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-700/50">
                   <span>{t('labels.expires')}: {new Date(bonus.expiresAt).toLocaleDateString()}</span>

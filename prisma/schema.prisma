@@ -139,7 +139,7 @@ model Transaction {
   bets        Bet[]
 
   bonus       Bonus?               @relation(fields: [bonusId], references: [id])
-  bonusId     String?              @unique
+  bonusId     String?              
 
   userId            String
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -440,7 +440,7 @@ model Bonus {
   type                  PromoCodeType
   status                BonusStatus   @default(PENDING_ACTIVATION)
 
-  transaction           Transaction?
+  transaction           Transaction[]
   
   userId                String
   user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)

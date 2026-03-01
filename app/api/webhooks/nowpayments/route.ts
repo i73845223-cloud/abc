@@ -118,7 +118,7 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
           amount: bonusAmount,
           status: 'success',
           description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
-          category: 'bonus',
+          category: 'transaction',
           bonusId: bonus.id,
         },
       });

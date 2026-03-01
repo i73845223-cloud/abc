@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { BalanceCache } from '@/lib/cached-balance';
+import { updateBonusWagering } from '@/lib/bonus-wagering'; // 👈 Add this import
 
 export async function POST(request: Request) {
   let userId: string | null = null;
@@ -68,6 +69,12 @@ export async function POST(request: Request) {
         winAmount
       };
     });
+
+    try {
+      await updateBonusWagering(betAmount, userId!);
+    } catch (wageringError) {
+      console.error('Error updating bonus wagering:', wageringError);
+    }
 
     return NextResponse.json(result);
   } catch (error) {
