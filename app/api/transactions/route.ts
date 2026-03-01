@@ -167,7 +167,8 @@ export async function POST(req: Request) {
                 amount: bonusAmount,
                 status: 'success',
                 description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
-                category: 'bonus'
+                category: 'bonus',
+                bonusId: bonus.id
               }
             });
           }

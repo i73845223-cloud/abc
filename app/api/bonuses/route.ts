@@ -40,16 +40,15 @@ export async function GET(req: Request) {
       })
     ]);
 
-    // Calculate REAL active bonus balance (exclude pending activation deposit bonuses)
     const realActiveBonuses = await db.bonus.aggregate({
       where: { 
         userId: user.id,
-        status: 'PENDING_WAGERING', // Only count bonuses that are actually active
+        status: 'PENDING_WAGERING',
         OR: [
-          { type: { not: 'DEPOSIT_BONUS' } }, // All non-deposit bonuses
+          { type: { not: 'DEPOSIT_BONUS' } },
           { 
             type: 'DEPOSIT_BONUS',
-            bonusAmount: { gt: 1 } // Only deposit bonuses with actual amounts
+            bonusAmount: { gt: 1 } 
           }
         ]
       },
@@ -62,7 +61,6 @@ export async function GET(req: Request) {
     const totalRemaining = (realActiveBonuses._sum.remainingAmount?.toNumber() || 0) + 
                           (realActiveBonuses._sum.freeSpinsWinnings?.toNumber() || 0);
 
-    // Count active bonuses (excluding pending activation deposit bonuses)
     const activeBonusesCount = await db.bonus.count({
       where: { 
         userId: user.id,
@@ -70,7 +68,6 @@ export async function GET(req: Request) {
       }
     });
 
-    // Count pending activation bonuses separately
     const pendingActivationCount = await db.bonus.count({
       where: { 
         userId: user.id,

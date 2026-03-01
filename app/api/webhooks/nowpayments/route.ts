@@ -29,32 +29,42 @@ export async function POST(req: Request) {
       return new NextResponse('Payment not found', { status: 404 });
     }
 
+    // Update crypto payment status (outside transaction, it's just logging)
     await db.cryptoPayment.update({
       where: { id: cryptoPayment.id },
       data: { status: mapNowPaymentsStatus(payment_status) },
     });
 
-    if (cryptoPayment.transactionId) {
-      if (payment_status === 'finished' && cryptoPayment.transaction?.status !== TransactionStatus.success) {
-        await db.transaction.update({
-          where: { id: cryptoPayment.transactionId },
+    // Handle finished status – update transaction and activate bonuses in a transaction
+    if (payment_status === 'finished' && cryptoPayment.transactionId) {
+      const transactionId = cryptoPayment.transactionId;
+
+      // Use a transaction to ensure consistency
+      await db.$transaction(async (tx) => {
+        // Update the deposit transaction to success
+        await tx.transaction.update({
+          where: { id: transactionId },
           data: { status: TransactionStatus.success },
         });
 
-        await activateDepositBonuses(db, cryptoPayment.userId, Number(cryptoPayment.baseAmount));
-        BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
-        console.log(`Deposit succeeded for user ${cryptoPayment.userId}`);
-      }
+        // Activate any pending deposit bonuses
+        await activateDepositBonuses(tx, cryptoPayment.userId, Number(cryptoPayment.baseAmount));
+      });
 
-      if ((payment_status === 'failed' || payment_status === 'expired') && cryptoPayment.transaction?.status !== TransactionStatus.fail) {
-        await db.transaction.update({
-          where: { id: cryptoPayment.transactionId },
-          data: { status: TransactionStatus.fail },
-        });
+      // Invalidate cache after successful transaction
+      BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
+      console.log(`Deposit succeeded for user ${cryptoPayment.userId}`);
+    }
 
-        BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
-        console.log(`Deposit failed for user ${cryptoPayment.userId}`);
-      }
+    // Handle failed/expired – only update transaction, no bonuses
+    if ((payment_status === 'failed' || payment_status === 'expired') && cryptoPayment.transactionId) {
+      const transactionId = cryptoPayment.transactionId;
+      await db.transaction.update({
+        where: { id: transactionId },
+        data: { status: TransactionStatus.fail },
+      });
+      BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
+      console.log(`Deposit failed for user ${cryptoPayment.userId}`);
     }
 
     return NextResponse.json({ received: true });
@@ -76,8 +86,15 @@ function mapNowPaymentsStatus(npStatus: string): CryptoPaymentStatus {
   }
 }
 
+/**
+ * Activate deposit bonuses for a user after a successful deposit.
+ * This function is meant to be called within a database transaction.
+ */
 async function activateDepositBonuses(tx: any, userId: string, depositAmount: number) {
-  const pendingDepositBonuses = await tx.bonus.findMany({
+  console.log(`[BONUS_ACTIVATION] Checking for user ${userId} with deposit ${depositAmount}`);
+
+  // Find all pending activation bonuses that are deposit-based
+  const pendingBonuses = await tx.bonus.findMany({
     where: {
       userId,
       type: { in: ['DEPOSIT_BONUS', 'COMBINED'] },
@@ -86,16 +103,26 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
     include: { promoCode: true },
   });
 
-  for (const bonus of pendingDepositBonuses) {
+  console.log(`[BONUS_ACTIVATION] Found ${pendingBonuses.length} pending bonuses`);
+
+  for (const bonus of pendingBonuses) {
+    console.log(`[BONUS_ACTIVATION] Processing bonus ${bonus.id} with promo code ${bonus.promoCode?.code}`);
+
     const minDepositAmount = bonus.promoCode?.minDepositAmount?.toNumber() || 0;
+    const bonusPercentage = bonus.promoCode?.bonusPercentage || 0;
+    const maxBonusAmount = bonus.promoCode?.maxBonusAmount?.toNumber() || 0;
+
+    console.log(`[BONUS_ACTIVATION] minDeposit: ${minDepositAmount}, bonus%: ${bonusPercentage}, max: ${maxBonusAmount}`);
+
     if (depositAmount >= minDepositAmount) {
-      const bonusPercentage = bonus.promoCode?.bonusPercentage || 0;
-      const maxBonusAmount = bonus.promoCode?.maxBonusAmount?.toNumber() || 0;
       let bonusAmount = depositAmount * (bonusPercentage / 100);
       if (maxBonusAmount > 0 && bonusAmount > maxBonusAmount) {
         bonusAmount = maxBonusAmount;
       }
 
+      console.log(`[BONUS_ACTIVATION] Calculated bonus amount: ${bonusAmount}`);
+
+      // Update the bonus record
       await tx.bonus.update({
         where: { id: bonus.id },
         data: {
@@ -107,7 +134,8 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
         },
       });
 
-      await tx.transaction.create({
+      // Create a transaction for the bonus credit and link it to the bonus
+      const created = await tx.transaction.create({
         data: {
           userId,
           type: 'deposit',
@@ -115,8 +143,13 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
           status: 'success',
           description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
           category: 'bonus',
+          bonusId: bonus.id, // 👈 critical: establish relation
         },
       });
+
+      console.log(`[BONUS_ACTIVATION] Created transaction ${created.id} with bonusId ${created.bonusId}`);
+    } else {
+      console.log(`[BONUS_ACTIVATION] Deposit amount ${depositAmount} is less than minimum ${minDepositAmount}, skipping`);
     }
   }
 }
