@@ -23,8 +23,7 @@ const Banners = () => {
   const banners = [
     { number: 1, href: "/promo" },
     { number: 2, href: "/book" },
-    { number: 3, href: "/slots" },
-    { number: 4, href: "/history" },
+    { number: 3, href: "/history" }
   ];
 
   return (
@@ -43,10 +42,10 @@ const Banners = () => {
               const fallbackKey = `${banner.number}en` as keyof typeof BANNER_IMAGES;
               
               return (
-                <CarouselItem key={banner.number} className="sm:pl-0 pl-2 basis-4/5 md:basis-1/2 lg:basis-1/3">
-                  <div className="sm:p-1">
+                <CarouselItem key={banner.number} className="pl-0 md:pl-1 md:basis-1/2">
+                  <div className="md:p-0.5">
                     <Link href={banner.href} className="block" prefetch={false}>
-                      <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden">
+                      <div className="relative w-full aspect-[5/2] md:rounded-md overflow-hidden">
                         <Image
                           src={BANNER_IMAGES[imageKey] || BANNER_IMAGES[fallbackKey]}
                           alt={`Banner ${banner.number}`}
