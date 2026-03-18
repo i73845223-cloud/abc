@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function uploadFresh() {
-  console.log('🚀 Starting fresh image upload...\n');
+  console.log('🚀 Starting fresh upload - ALL FILES WILL BE OVERWRITTEN...\n');
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     console.log('❌ BLOB_READ_WRITE_TOKEN not found in .env');
@@ -19,17 +19,6 @@ async function uploadFresh() {
     process.exit(1);
   }
 
-  const publicContents = fs.readdirSync(publicPath);
-  console.log('📦 Contents of public folder:', publicContents);
-
-  const bannersPath = path.join(publicPath, 'banners');
-  if (fs.existsSync(bannersPath)) {
-    const bannerFiles = fs.readdirSync(bannersPath);
-    console.log('🎯 Banner files found:', bannerFiles);
-  } else {
-    console.log('❌ banners folder not found in public!');
-  }
-
   const allUrls = {};
 
   async function uploadFile(filePath, blobPath) {
@@ -39,14 +28,14 @@ async function uploadFresh() {
       
       const { url } = await put(blobPath, fileBuffer, {
         access: 'public',
+        addRandomSuffix: false,
         allowOverwrite: true,
       });
       
       const relativePath = path.relative(publicPath, filePath).replace(/\\/g, '/');
       allUrls[relativePath] = url;
-      console.log(`✅ Uploaded: ${relativePath} -> ${url}`);
+      console.log(`✅ Uploaded & Overwritten: ${relativePath} -> ${url}`);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
       return true;
     } catch (error) {
       console.error(`❌ Failed: ${blobPath}`, error.message);
@@ -54,31 +43,34 @@ async function uploadFresh() {
     }
   }
 
-  if (fs.existsSync(bannersPath)) {
-    console.log('\n🎯 UPLOADING BANNERS...');
-    const bannerFiles = fs.readdirSync(bannersPath);
-    
-    for (const file of bannerFiles) {
-      if (/(\.webp|\.jpg|\.jpeg|\.png)$/i.test(file)) {
-        const filePath = path.join(bannersPath, file);
-        await uploadFile(filePath, `banners/${file}`);
+  function getAllFiles(dirPath, arrayOfFiles = []) {
+    const files = fs.readdirSync(dirPath);
+
+    files.forEach((file) => {
+      const fullPath = path.join(dirPath, file);
+      if (fs.statSync(fullPath).isDirectory()) {
+        arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
+      } else {
+        arrayOfFiles.push(fullPath);
       }
-    }
+    });
+
+    return arrayOfFiles;
   }
 
-  console.log('\n📦 UPLOADING OTHER IMAGES...');
-  for (const item of publicContents) {
-    const fullPath = path.join(publicPath, item);
-    const stat = fs.statSync(fullPath);
-    
-    if (stat.isDirectory() && item !== 'banners') {
-      const subItems = fs.readdirSync(fullPath);
-      for (const subItem of subItems) {
-        if (/(\.webp|\.jpg|\.jpeg|\.png)$/i.test(subItem)) {
-          const filePath = path.join(fullPath, subItem);
-          await uploadFile(filePath, `${item}/${subItem}`);
-        }
-      }
+  const allFiles = getAllFiles(publicPath);
+  console.log(`\n📦 Found ${allFiles.length} total files to upload...`);
+
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const filePath of allFiles) {
+    const relativePath = path.relative(publicPath, filePath);
+    const success = await uploadFile(filePath, relativePath);
+    if (success) {
+      successCount++;
+    } else {
+      failCount++;
     }
   }
 
@@ -91,12 +83,23 @@ async function uploadFresh() {
   fs.writeFileSync(outputPath, JSON.stringify(allUrls, null, 2));
   
   console.log('\n🎉 UPLOAD COMPLETED!');
-  console.log(`📊 Total images: ${Object.keys(allUrls).length}`);
-  console.log(`💾 Saved to: ${outputPath}`);
+  console.log(`📊 Total files processed: ${allFiles.length}`);
+  console.log(`✅ Successfully uploaded: ${successCount}`);
+  console.log(`❌ Failed: ${failCount}`);
+  console.log(`💾 URLs saved to: ${outputPath}`);
   
-  const bannerUrls = Object.keys(allUrls).filter(key => key.includes('banners/'));
-  console.log(`\n🎯 Banners uploaded: ${bannerUrls.length}`);
-  bannerUrls.forEach(url => console.log(`   ${url}`));
+  const extensions = {};
+  Object.keys(allUrls).forEach(key => {
+    const ext = path.extname(key).toLowerCase();
+    extensions[ext] = (extensions[ext] || 0) + 1;
+  });
+  
+  console.log('\n📁 Files by extension:');
+  Object.entries(extensions)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([ext, count]) => {
+      console.log(`   ${ext || 'no extension'}: ${count}`);
+    });
 }
 
 uploadFresh().catch(console.error);

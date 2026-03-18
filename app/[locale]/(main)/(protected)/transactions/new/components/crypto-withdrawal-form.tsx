@@ -13,6 +13,8 @@ import { AlertCircle, CheckCircle2, Banknote, Loader2, Wallet } from 'lucide-rea
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import Balance from '@/components/balance';
+import Image from 'next/image';
+import { CRYPTO_IMAGES } from '@/lib/crypto-images';
 
 interface WithdrawalFormProps {
   userBalance: number;
@@ -23,46 +25,46 @@ const currencyOptions = [
   { 
     value: 'usdttrc20', 
     display: 'USDT TRC20', 
-    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
-    networkImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
+    tokenImage: CRYPTO_IMAGES['tether-usdt'],
+    networkImage: CRYPTO_IMAGES['tron-network']
   },
   { 
     value: 'usdterc20', 
     display: 'USDT ERC20', 
-    tokenImage: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
-    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+    tokenImage: CRYPTO_IMAGES['tether-usdt'],
+    networkImage: CRYPTO_IMAGES['ethereum-network']
   },
   { 
     value: 'usdcerc20', 
     display: 'USDC ERC20', 
-    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    networkImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+    tokenImage: CRYPTO_IMAGES['usd-coin-usdc'],
+    networkImage: CRYPTO_IMAGES['ethereum-network']
   },
   { 
     value: 'usdcsol', 
     display: 'USDC SOL', 
-    tokenImage: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    networkImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+    tokenImage: CRYPTO_IMAGES['usd-coin-usdc'],
+    networkImage: CRYPTO_IMAGES['solana-network']
   },
   { 
     value: 'eth', 
     display: 'ETH', 
-    tokenImage: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+    tokenImage: CRYPTO_IMAGES['ethereum-eth']
   },
   { 
     value: 'btc', 
     display: 'BTC', 
-    tokenImage: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png'
+    tokenImage: CRYPTO_IMAGES['bitcoin-btc']
   },
   { 
     value: 'sol', 
     display: 'SOL', 
-    tokenImage: 'https://cryptologos.cc/logos/solana-sol-logo.png'
+    tokenImage: CRYPTO_IMAGES['solana-sol']
   },
   { 
     value: 'trx', 
     display: 'TRX', 
-    tokenImage: 'https://cryptologos.cc/logos/tron-trx-logo.png'
+    tokenImage: CRYPTO_IMAGES['tron-trx']
   },
 ];
 
@@ -76,6 +78,7 @@ export function CryptoWithdrawalForm({
   const [success, setSuccess] = useState(false);
   const [transactionId, setTransactionId] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const withdrawalSchema = useMemo(
     () =>
@@ -112,6 +115,11 @@ export function CryptoWithdrawalForm({
     const finalAmount = Math.min(suggestedAmount, userBalance);
     form.setValue('amountInr', finalAmount.toFixed(2));
     form.trigger('amountInr');
+  };
+
+  const handleImageError = (optionValue: string, isNetwork = false) => {
+    const key = isNetwork ? `${optionValue}-network` : optionValue;
+    setImageErrors(prev => ({ ...prev, [key]: true }));
   };
 
   const onSubmit = async (data: WithdrawalFormValues) => {
@@ -270,23 +278,32 @@ export function CryptoWithdrawalForm({
                       onClick={() => field.onChange(option.value)}
                     >
                       <div className="relative w-10 h-10">
-                        <img
-                          src={option.tokenImage}
-                          alt={option.display}
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
-                          }}
-                        />
-                        {option.networkImage && (
+                        {option.tokenImage && !imageErrors[option.value] ? (
+                          <Image
+                            src={option.tokenImage}
+                            alt={option.display}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-contain"
+                            onError={() => handleImageError(option.value)}
+                            unoptimized // Add if images are from external domains or blob
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded-full flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">?</span>
+                          </div>
+                        )}
+                        
+                        {option.networkImage && !imageErrors[`${option.value}-network`] && (
                           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
-                            <img
+                            <Image
                               src={option.networkImage}
                               alt="network"
+                              width={20}
+                              height={20}
                               className="w-full h-full object-contain bg-white rounded-full p-0.5"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://cryptologos.cc/logos/placeholder.png';
-                              }}
+                              onError={() => handleImageError(option.value, true)}
+                              unoptimized
                             />
                           </div>
                         )}

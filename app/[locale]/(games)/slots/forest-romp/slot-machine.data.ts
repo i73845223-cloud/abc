@@ -1,9 +1,4 @@
-import lemon from "@/public/forest-romp/1symb.webp";
-import cherries from "@/public/forest-romp/2symb.webp";
-import orange from "@/public/forest-romp/3symb.webp";
-import bell from "@/public/forest-romp/4symb.webp";
-import diamond from "@/public/forest-romp/5symb.webp";
-import { StaticImageData } from "next/image";
+import { GAME_ASSETS } from '@/lib/game-assets';
 
 export const ANIMATION_DURATION = 1500;
 export const MIN_BET = 10;
@@ -11,15 +6,25 @@ export const MAX_BET = 10000;
 export const PRESET_BETS = [100, 500, 1000, 5000];
 export const AUTO_SPIN_OPTIONS = [5, 10, 20, 50, 100, 1000];
 
+const gameAssets = GAME_ASSETS.forestRomp;
+
+export const lemon = gameAssets.symbols['1symb'];
+export const cherries = gameAssets.symbols['2symb'];
+export const orange = gameAssets.symbols['3symb'];
+export const bell = gameAssets.symbols['4symb'];
+export const diamond = gameAssets.symbols['5symb'];
+
 export const SOUND_PATHS = {
-  background: "/forest-romp/sounds/bg.mp3",
-  spin: '/forest-romp/sounds/spin.mp3',
+  background: gameAssets.sounds.background,
+  spin: gameAssets.sounds.spin,
+  win: gameAssets.sounds.win,
+  buttonClick: gameAssets.sounds.buttonClick,
   symbols: {
-    lemon: '/forest-romp/sounds/1symb.mp3',
-    cherries: '/forest-romp/sounds/2symb.mp3',
-    orange: '/forest-romp/sounds/3symb.mp3',
-    bell: '/forest-romp/sounds/4symb.mp3',
-    diamond: '/forest-romp/sounds/5symb.mp3',
+    lemon: gameAssets.sounds['1symb'],
+    cherries: gameAssets.sounds['2symb'],
+    orange: gameAssets.sounds['3symb'],
+    bell: gameAssets.sounds['4symb'],
+    diamond: gameAssets.sounds['5symb'],
   }
 };
 
@@ -64,7 +69,7 @@ export const PAYOUTS = [
   }
 ].sort((a, b) => b.combinations[0].multiplier - a.combinations[0].multiplier);
 
-export const getRandomSymbol = (): StaticImageData => {
+export const getRandomSymbol = (): string => {
   const rand = Math.random();
   let sum = 0;
   
