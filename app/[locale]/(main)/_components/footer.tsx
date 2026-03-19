@@ -36,7 +36,7 @@ export default function Footer() {
                     className="scale-75"
                 />
                 <div>
-                    <span className="text-2xl">altbet</span>
+                    <span className="text-2xl">alt.win</span>
                 </div>
             </h3>
             <p className="text-sm text-muted-foreground">
