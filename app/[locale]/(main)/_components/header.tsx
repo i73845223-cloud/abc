@@ -19,7 +19,7 @@ const Header = () => {
                     priority
                 />
                 <div className={montserrat.className}>
-                    <span className="hidden sm:inline">altbet</span>
+                    <span className="hidden sm:inline">alt.win</span>
                 </div>
             </Link>
             <HeaderNav />
