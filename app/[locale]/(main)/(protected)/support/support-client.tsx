@@ -2,9 +2,9 @@
 
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, Mail, MailOpen, RefreshCw } from "lucide-react";
+import { PlusIcon, Mail, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import axios from "axios";
@@ -34,6 +34,7 @@ const SupportClient = ({ initialConversations, currentUserId, isChatBlocked }: S
     const [selectedTopic, setSelectedTopic] = useState("");
     const [conversations, setConversations] = useState(initialConversations);
     const [refreshing, setRefreshing] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const t = useTranslations('Support');
 
     const getUnreadMessagesCount = (messages: any[]) => {
@@ -75,6 +76,7 @@ const SupportClient = ({ initialConversations, currentUserId, isChatBlocked }: S
             
             router.refresh();
             router.push(`/support/${createdChat.id}`);
+            setIsDialogOpen(false);
         } catch (error) {
             console.error("Error creating chat:", error);
         }
@@ -122,11 +124,20 @@ const SupportClient = ({ initialConversations, currentUserId, isChatBlocked }: S
         };
     }, []);
 
+    const resetForm = () => {
+        setIsOtherOptionSelected(false);
+        setCustomTopic("");
+        setSelectedTopic("");
+    };
+
+    const hasConversations = conversations && conversations.length > 0;
+
     return (
         <>
             <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-2">
-                    <Dialog>
+                {/* Show "New Chat" button at top only if there are conversations */}
+                {hasConversations && (
+                    <div className="flex items-center gap-2">
                         {isChatBlocked ? (
                             <button
                                 className="py-3 px-5 bg-primary text-primary-foreground shadow inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium opacity-50"
@@ -136,56 +147,16 @@ const SupportClient = ({ initialConversations, currentUserId, isChatBlocked }: S
                                 {t('newChat')}
                             </button>
                         ) : (
-                            <DialogTrigger asChild>
                             <button
+                                onClick={() => setIsDialogOpen(true)}
                                 className="py-3 px-5 bg-primary text-primary-foreground shadow hover:bg-primary/90 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             >
                                 <PlusIcon className="mr-2 h-4 w-4" />
                                 {t('newChat')}
                             </button>
-                            </DialogTrigger>
                         )}
-                        <DialogContent className="bg-black">
-                            <DialogHeader className="text-xl"><DialogTitle>{t('startNewChat')}</DialogTitle></DialogHeader>
-                            <form onSubmit={(e) => { e.preventDefault(); onSubmit({ topic: selectedTopic }); }}>
-                                <div>
-                                    <label htmlFor="topic">{t('topic')}</label>
-                                    <Select onValueChange={handleSelectChange}>
-                                        <SelectTrigger className="mt-2">
-                                            <SelectValue placeholder={t('selectTopic')} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Deposit">{t('topics.deposit')}</SelectItem>
-                                            <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Withdrawal">{t('topics.withdrawal')}</SelectItem>
-                                            <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Technical">{t('topics.technical')}</SelectItem>
-                                            <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Offer">{t('topics.offer')}</SelectItem>
-                                            <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Other">{t('topics.other')}</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-
-                                    {isOtherOptionSelected && (
-                                        <div className="mt-2">
-                                            <label htmlFor="customTopic" className="text-sm">{t('writeTopic')}</label>
-                                            <Input
-                                                id="customTopic"
-                                                value={customTopic}
-                                                onChange={handleCustomTopicChange}
-                                                placeholder={t('enterCustomTopic')}
-                                                minLength={1}
-                                                maxLength={1000}
-                                                className="mt-1"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <DialogFooter className="mt-4">
-                                    <Button type="submit" variant="default" className="px-8 py-4 text-lg" disabled={!isSubmitEnabled}>{t('start')}</Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                    </div>
+                )}
 
                 {totalUnreadCount > 0 && (
                     <Badge variant="destructive" className="animate-pulse">
@@ -200,7 +171,54 @@ const SupportClient = ({ initialConversations, currentUserId, isChatBlocked }: S
                 currentUserId={currentUserId} 
                 onRefresh={refreshConversations}
                 refreshing={refreshing}
+                isChatBlocked={isChatBlocked}
+                onNewChat={() => setIsDialogOpen(true)}
             />
+
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
+            }}>
+                <DialogContent className="bg-black">
+                    <DialogHeader className="text-xl"><DialogTitle>{t('startNewChat')}</DialogTitle></DialogHeader>
+                    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ topic: selectedTopic }); }}>
+                        <div>
+                            <label htmlFor="topic">{t('topic')}</label>
+                            <Select onValueChange={handleSelectChange}>
+                                <SelectTrigger className="mt-2">
+                                    <SelectValue placeholder={t('selectTopic')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Deposit">{t('topics.deposit')}</SelectItem>
+                                    <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Withdrawal">{t('topics.withdrawal')}</SelectItem>
+                                    <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Technical">{t('topics.technical')}</SelectItem>
+                                    <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Offer">{t('topics.offer')}</SelectItem>
+                                    <SelectItem className="cursor-pointer hover:bg-gray-900 transition duration-300 ease-in-out" value="Other">{t('topics.other')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {isOtherOptionSelected && (
+                                <div className="mt-2">
+                                    <label htmlFor="customTopic" className="text-sm">{t('writeTopic')}</label>
+                                    <Input
+                                        id="customTopic"
+                                        value={customTopic}
+                                        onChange={handleCustomTopicChange}
+                                        placeholder={t('enterCustomTopic')}
+                                        minLength={1}
+                                        maxLength={1000}
+                                        className="mt-1"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter className="mt-4">
+                            <Button type="submit" variant="default" className="px-8 py-4 text-lg" disabled={!isSubmitEnabled}>{t('start')}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };
@@ -209,12 +227,16 @@ const ConversationsListWithUnread = ({
     conversations, 
     currentUserId, 
     onRefresh,
-    refreshing 
+    refreshing,
+    isChatBlocked = false,
+    onNewChat
 }: { 
     conversations: any[], 
     currentUserId?: string,
     onRefresh?: () => void,
-    refreshing?: boolean
+    refreshing?: boolean,
+    isChatBlocked?: boolean,
+    onNewChat?: () => void
 }) => {
   const router = useRouter();
   const t = useTranslations('Support');
@@ -258,11 +280,43 @@ const ConversationsListWithUnread = ({
   }, [onRefresh]);
 
   if (refreshing) {
-    return <div className="text-gray-600 flex items-center gap-2 px-4"><RefreshCw className="h-4 w-4 animate-spin" /> {t('refreshing')}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] lg:min-h-[500px] text-center px-4">
+        <div className="rounded-full bg-gray-900 p-6 mb-4">
+          <RefreshCw className="h-12 w-12 text-gray-400 animate-spin" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-200 mb-2">
+          {t('loadingTitle') || 'Loading conversations...'}
+        </h3>
+        <p className="text-gray-400 max-w-md">
+          {t('loadingDescription') || 'Please wait while we fetch your conversations.'}
+        </p>
+      </div>
+    );
   }
 
   if (!conversations || conversations.length === 0) {
-    return <div className="text-gray-600">{t('noConversations')}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] lg:min-h-[500px] text-center px-4">
+        <div className="rounded-full bg-gray-900 p-6 mb-4">
+          <Mail className="h-12 w-12 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-200 mb-2">
+          {t('emptyStateTitle') || 'No conversations yet'}
+        </h3>
+        <p className="text-gray-400 max-w-md mb-6">
+          {isChatBlocked
+            ? t('emptyStateBlocked') || 'Chat is currently blocked. Please contact support for assistance.'
+            : t('emptyStateDescription') || 'Start a new conversation by clicking the button below.'}
+        </p>
+        {!isChatBlocked && onNewChat && (
+          <Button onClick={onNewChat} className="gap-2">
+            <PlusIcon className="h-4 w-4" />
+            {t('newChat')}
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (

@@ -10,7 +10,10 @@
     "profile": "Profile"
   },
   "Home": {
-    "upcomingMatches": "Upcoming matches",
+    "upcomingMatches": "Hot matches",
+    "cricket": "Cricket",
+    "football": "Football",
+    "basketball": "Basketball",
     "viewAll": "View all",
     "noUpcomingMatches": "No upcoming matches",
     "noMatchesDescription": "There are no upcoming matches scheduled at the moment. Check back later for new events!",
@@ -397,6 +400,11 @@
     "back": "Back",
     "chatBlocked": "You are chat blocked",
     "writeMessage": "Write a message",
+    "emptyStateTitle": "No conversations yet",
+    "emptyStateDescription": "Start a new conversation by clicking the button below.",
+    "emptyStateBlocked": "Chat is currently blocked. Please contact support for assistance.",
+    "loadingTitle": "Loading conversations...",
+    "loadingDescription": "Please wait while we fetch your conversations.",
     "topics": {
       "deposit": "Deposit not processed",
       "withdrawal": "Withdrawal not processed",
@@ -578,7 +586,7 @@
     "support": "Support",
     "transactions": "Transactions",
     "history": "History",
-    "copyright": "© {year} alt.win. All rights reserved.",
+    "copyright": "alt.win © {year}. All rights reserved",
     "responsibleGaming": "Gambling can be addictive. Play responsibly."
   }
 }

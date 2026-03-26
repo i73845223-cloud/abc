@@ -10,7 +10,10 @@
     "profile": "प्रोफाइल"
   },
   "Home": {
-    "upcomingMatches": "आगामी मैच",
+    "upcomingMatches": "हॉट मैच",
+    "cricket": "क्रिकेट",
+    "football": "फुटबॉल",
+    "basketball": "बास्केटबॉल",
     "viewAll": "सभी देखें",
     "noUpcomingMatches": "कोई आगामी मैच नहीं",
     "noMatchesDescription": "फिलहाल कोई आगामी मैच शेड्यूल नहीं है। नई इवेंट्स के लिए बाद में चेक करें!",
@@ -396,6 +399,11 @@
     "back": "वापस",
     "chatBlocked": "आप चैट ब्लॉक हैं",
     "writeMessage": "एक संदेश लिखें",
+    "emptyStateTitle": "कोई बातचीत नहीं",
+    "emptyStateDescription": "नीचे दिए गए बटन पर क्लिक करके नई बातचीत शुरू करें।",
+    "emptyStateBlocked": "चैट वर्तमान में अवरुद्ध है। कृपया सहायता के लिए संपर्क करें।",
+    "loadingTitle": "बातचीत लोड हो रही है...",
+    "loadingDescription": "कृपया प्रतीक्षा करें, हम आपकी बातचीत ला रहे हैं।",
     "topics": {
       "deposit": "डिपॉजिट प्रोसेस नहीं हुआ",
       "withdrawal": "विथड्रॉल प्रोसेस नहीं हुआ",
@@ -577,7 +585,7 @@
     "support": "सहायता",
     "transactions": "लेन-देन",
     "history": "इतिहास",
-    "copyright": "© {year} alt.win सर्वाधिकार सुरक्षित।",
+    "copyright": "alt.win © {year}. सर्वाधिकार सुरक्षित।",
     "responsibleGaming": "जुआ लत लगा सकता है। जिम्मेदारी से खेलें।"
   }
 }

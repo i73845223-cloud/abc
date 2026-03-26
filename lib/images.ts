@@ -20,3 +20,9 @@ export const SLOT_GAME_IMAGES = {
   rupeeRush: getImageUrl('rupee-rush/preview.webp'),
   forestRomp: getImageUrl('forest-romp/preview.webp'),
 } as const;
+
+export const SPORT_ICONS = {
+  football: getImageUrl('football.webp'),
+  cricket: getImageUrl('cricket.webp'),
+  basketball: getImageUrl('basketball.webp'),
+} as const;

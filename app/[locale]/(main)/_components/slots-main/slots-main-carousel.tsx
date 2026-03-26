@@ -49,7 +49,7 @@ export default function SlotsCarousel() {
       >
         <CarouselContent>
           {slotGames.map((game, index) => (
-            <CarouselItem key={index} className="basis-4/5 sm:basis-1/2 md:basis-1/4 flex items-center justify-center">
+            <CarouselItem key={index} className="basis-3/5 sm:basis-1/2 md:basis-1/4 flex items-center justify-center">
               <SlotGameCard game={game} />
             </CarouselItem>
           ))}

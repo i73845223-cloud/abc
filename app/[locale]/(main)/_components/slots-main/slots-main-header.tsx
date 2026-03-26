@@ -11,7 +11,7 @@ export default function SlotsHeader() {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div className="flex items-center gap-3">
-        <h2 className="text-2xl font-bold tracking-tight">{t('slotGames')}</h2>
+        <h2 className="text-2xl font-bold tracking-tight ml-3">{t('slotGames')}</h2>
       </div>
       
       <Link href="/slots" className="w-full sm:w-auto">

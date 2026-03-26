@@ -10,7 +10,7 @@ export default async function getConversations() {
 
     const conversations = await db.conversation.findMany({
       where: {
-        userId: user.id, // Only get conversations for the current user
+        userId: user.id,
       },
       include: {
         messages: {
