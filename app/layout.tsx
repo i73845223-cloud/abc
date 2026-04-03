@@ -13,8 +13,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ALTWIN',
-    template: '%s | ALTWIN'
+    default: 'alt.win',
+    template: '%s | alt.win'
   },
   description: 'Your Alternative Way of Winning',
   icons: {
