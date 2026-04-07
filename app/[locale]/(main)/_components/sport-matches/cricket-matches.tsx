@@ -130,7 +130,7 @@ export default async function CricketMatches() {
   const upcomingMatches = await getCricketlMatches()
 
   if (!upcomingMatches || upcomingMatches.length === 0) {
-    return <UpcomingMatchesEmpty />
+    return
   }
 
   return (

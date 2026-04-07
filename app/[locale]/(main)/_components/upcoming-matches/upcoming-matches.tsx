@@ -14,7 +14,8 @@ async function getUpcomingMatches(): Promise<BookType[]> {
     const books = await db.book.findMany({
       where: {
         status: 'ACTIVE',
-        date: { gt: now }
+        date: { gt: now },
+        isHotEvent: true
       },
       include: {
         teams: true,
