@@ -159,7 +159,7 @@ export default function MyBetsPage() {
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-      timeZone: 'Asia/Kolkata',
+      timeZone: 'UTC',
       year: 'numeric',
       month: 'long',
       day: '2-digit',

@@ -509,7 +509,7 @@ function BookCard({
   const displayCategory = book.category.charAt(0).toUpperCase() + book.category.slice(1).toLowerCase()
 
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-    timeZone: 'Asia/Kolkata',
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'long',
     day: '2-digit',

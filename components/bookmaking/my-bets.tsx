@@ -88,7 +88,7 @@ export default function MyBets() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-      timeZone: 'Asia/Kolkata',
+      timeZone: 'UTC',
       year: 'numeric',
       month: 'long',
       day: '2-digit',

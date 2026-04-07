@@ -166,7 +166,7 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
 
           <div className="text-xs text-muted-foreground mb-3">
             {bookDate.toLocaleString('en-IN', {
-              timeZone: 'Asia/Kolkata',
+              timeZone: 'UTC',
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
