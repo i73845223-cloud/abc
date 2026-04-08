@@ -102,6 +102,7 @@ export default function MyBetsPage() {
           await refreshBalance();
           fetchUserBets()
           resolve(t('betCancelled'))
+          window.location.reload()
         } else {
           const errorData = await response.json()
           reject(errorData.message || t('failedToCancelBet'))

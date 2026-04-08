@@ -90,6 +90,7 @@ export default function MyBetsTab({ initialBets, bookId }: MyBetsTabProps) {
           await refreshBalance()
           setBets(prev => prev.filter(bet => bet.id !== betId))
           resolve('Bet cancelled successfully')
+          window.location.reload()
         } else {
           const errorData = await response.json()
           reject(errorData.message || 'Failed to cancel bet')
