@@ -69,7 +69,6 @@ interface ClientBookmakingDashboardProps {
 
 type FilterType = 'all' | 'hot' | 'national' | string;
 
-// Category order matching QuickLinks
 const CATEGORY_ORDER = [
   'cricket',
   'football',
@@ -244,10 +243,8 @@ export default function ClientBookmakingDashboard({
   const isMainPage = !categoryParam;
   const showAccordionView = activeFilter === 'all' && !searchQuery;
 
-  // Determine if accordions should be open by default (category page with <3 books)
   const shouldOpenAccordions = !isMainPage && books.length < 3;
 
-  // Helper: sort books with hot first
   const sortBooksByHot = (booksArray: Book[]) => {
     return [...booksArray].sort((a, b) => {
       if (a.isHotEvent && !b.isHotEvent) return -1;
@@ -256,7 +253,6 @@ export default function ClientBookmakingDashboard({
     });
   };
 
-  // Filter books by active filter
   const filteredBooks = (() => {
     if (activeFilter === 'all') return books;
     if (activeFilter === 'hot') return books.filter((b) => b.isHotEvent);
@@ -264,10 +260,8 @@ export default function ClientBookmakingDashboard({
     return books.filter((b) => b.championship === activeFilter);
   })();
 
-  // Build grouped data for accordions based on filtered books
   const getGroupedData = () => {
     if (isMainPage) {
-      // Main page: group by category
       const groupedByCategory: Record<string, Book[]> = {};
       filteredBooks.forEach((book) => {
         const cat = book.category.toLowerCase();
@@ -281,7 +275,6 @@ export default function ClientBookmakingDashboard({
       }));
       return { type: 'main' as const, data: result };
     } else {
-      // Category page: group by championship
       const withChampionship: Record<string, Book[]> = {};
       const withoutChampionship: Book[] = [];
       filteredBooks.forEach((book) => {
@@ -292,7 +285,6 @@ export default function ClientBookmakingDashboard({
           withoutChampionship.push(book);
         }
       });
-      // Determine hot championships
       const championshipHasHot = Object.entries(withChampionship).reduce(
         (acc, [champ, champBooks]) => {
           acc[champ] = champBooks.some((b) => b.isHotEvent);
@@ -320,12 +312,11 @@ export default function ClientBookmakingDashboard({
 
   const groupedData = showAccordionView ? getGroupedData() : null;
 
-  // Fire icon fallback
   const fireIcon = SPORT_ICONS.fire || null;
+  const nationalIcon = SPORT_ICONS.india;
 
   return (
     <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
-      {/* Search Card */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="relative">
@@ -356,17 +347,14 @@ export default function ClientBookmakingDashboard({
         </CardContent>
       </Card>
 
-      {/* Circular Quick Links: All Sports, National, then categories */}
       {initialCategories.length > 0 && (
         <div className="my-4">
-          {/* Desktop */}
           <div className="relative hidden sm:block">
             <div className="relative group/carousel">
               <div
                 ref={scrollContainerRef}
                 className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
               >
-                {/* All Sports Button */}
                 <Link
                   href="/book"
                   className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
@@ -387,18 +375,26 @@ export default function ClientBookmakingDashboard({
                   <span className="text-xs sm:text-sm font-medium text-center">{t('allSports')}</span>
                 </Link>
 
-                {/* National Button */}
                 <Link
                   href="/book?filter=national"
                   className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
                 >
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                    <Globe className="h-8 w-8 text-blue-500" />
+                    {nationalIcon ? (
+                      <Image
+                        src={nationalIcon}
+                        alt={t('national')}
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <Globe className="h-8 w-8 text-blue-500" />
+                    )}
                   </div>
                   <span className="text-xs sm:text-sm font-medium text-center">{t('national')}</span>
                 </Link>
 
-                {/* Category Circles */}
                 {initialCategories.map((categorySlug) => {
                   const normalizedSlug = categorySlug.toLowerCase();
                   const icon = categoryIconMap[normalizedSlug];
@@ -445,13 +441,11 @@ export default function ClientBookmakingDashboard({
             </div>
           </div>
 
-          {/* Mobile */}
           <div className="relative sm:hidden">
             <div
               ref={scrollContainerRef}
               className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
             >
-              {/* All Sports Button */}
               <Link
                 href="/book"
                 className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
@@ -472,18 +466,26 @@ export default function ClientBookmakingDashboard({
                 <span className="text-xs font-medium text-center">{t('allSports')}</span>
               </Link>
 
-              {/* National Button */}
               <Link
                 href="/book?filter=national"
                 className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
               >
                 <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-blue-500" />
+                  {nationalIcon ? (
+                    <Image
+                      src={nationalIcon}
+                      alt={t('national')}
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
+                  ) : (
+                    <Globe className="h-8 w-8 text-blue-500" />
+                  )}
                 </div>
                 <span className="text-xs font-medium text-center">{t('national')}</span>
               </Link>
 
-              {/* Category Circles */}
               {initialCategories.map((categorySlug) => {
                 const normalizedSlug = categorySlug.toLowerCase();
                 const icon = categoryIconMap[normalizedSlug];
@@ -517,67 +519,6 @@ export default function ClientBookmakingDashboard({
         </div>
       )}
 
-      {/* Simple Filters Row (replaces old filter cards) */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={activeFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleFilterChange('all')}
-          className="text-xs sm:text-sm"
-        >
-          {t('allMatches')}
-        </Button>
-        {hasHotEvents && (
-          <Button
-            variant={activeFilter === 'hot' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('hot')}
-            className="text-xs sm:text-sm"
-          >
-            <Flame className="h-3 w-3 mr-1" />
-            {t('hotMatches')}
-          </Button>
-        )}
-        {hasNationalEvents && (
-          <Button
-            variant={activeFilter === 'national' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('national')}
-            className="text-xs sm:text-sm"
-          >
-            <Globe className="h-3 w-3 mr-1" />
-            {t('nationalSports')}
-          </Button>
-        )}
-      </div>
-
-      {/* Active filters indicator */}
-      {hasActiveSearchOrFilter && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">{t('currentlyViewing')}</span>
-          {searchQuery && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Search className="h-3 w-3" />
-              {searchQuery}
-            </Badge>
-          )}
-          {activeFilter !== 'all' && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              {activeFilter === 'hot' && <Flame className="h-3 w-3" />}
-              {activeFilter === 'national' && <Globe className="h-3 w-3" />}
-              {activeFilter !== 'hot' && activeFilter !== 'national' && <Trophy className="h-3 w-3" />}
-              {activeFilter === 'hot' ? t('hotMatches') : activeFilter === 'national' ? t('nationalSports') : activeFilter}
-            </Badge>
-          )}
-          <span className="text-muted-foreground">{t('in')}</span>
-          <Badge variant="outline">{currentCategoryDisplay}</Badge>
-          <Button variant="ghost" size="sm" onClick={handleClearSearch} className="h-6 text-xs">
-            {t('clearAll')}
-          </Button>
-        </div>
-      )}
-
-      {/* Books List */}
       {filteredBooks.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
@@ -590,7 +531,6 @@ export default function ClientBookmakingDashboard({
           {showAccordionView && groupedData ? (
             <div className="space-y-4">
               {groupedData.type === 'main' ? (
-                // Main page: Sport accordions with images
                 groupedData.data.map(({ category, books }) => {
                   const icon = categoryIconMap[category];
                   const displayName = formatCategoryForDisplay(category);
@@ -640,7 +580,6 @@ export default function ClientBookmakingDashboard({
                   );
                 })
               ) : (
-                // Category page: Championship accordions + books without championship
                 <>
                   {groupedData.data.championships.map(({ name, books }) => (
                     <Accordion
@@ -701,7 +640,6 @@ export default function ClientBookmakingDashboard({
               )}
             </div>
           ) : (
-            // Flat list when filters/search are active
             <div className="space-y-4">
               {filteredBooks.map((book) => (
                 <BookCard
@@ -736,7 +674,6 @@ export default function ClientBookmakingDashboard({
   );
 }
 
-// ---------- BookCard Component ----------
 function BookCard({
   book,
   onOutcomeClick,
@@ -1002,7 +939,6 @@ function BookCard({
   );
 }
 
-// ---------- NoBooksCard Component ----------
 function NoBooksCard({
   category,
   filter,
@@ -1058,7 +994,6 @@ function NoBooksCard({
   );
 }
 
-// ---------- ShadcnPagination Component ----------
 function ShadcnPagination({
   pagination,
   onPageChange,
@@ -1101,10 +1036,6 @@ function ShadcnPagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-t border-border">
-      <div className="text-sm text-muted-foreground">
-        {t('pageInfo', { current: currentPage, total: totalPages })}
-      </div>
-
       <Pagination>
         <PaginationContent>
           <PaginationItem>

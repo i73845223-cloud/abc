@@ -67,7 +67,19 @@
     "noBooksInCategory": "\"{category}\" श्रेणी में कोई बुक नहीं मिली",
     "noBooksAvailableDescription": "फिलहाल कोई एक्टिव बेटिंग बुक उपलब्ध नहीं है।",
     "noBooksInCategoryDescription": "फिलहाल इस श्रेणी में कोई एक्टिव बेटिंग बुक उपलब्ध नहीं है।",
-    "viewAllEvents": "सभी इवेंट्स देखें"
+    "viewAllEvents": "सभी इवेंट्स देखें",
+    "searchPlaceholder": "इवेंट, टीम या चैंपियनशिप खोजें...",
+    "clear": "साफ़ करें",
+    "searchingFor": "खोज रहे हैं:",
+    "allSports": "सभी खेल",
+    "national": "राष्ट्रीय",
+    "allMatches": "सभी मैच",
+    "hotMatches": "हॉट मैच",
+    "nationalSports": "राष्ट्रीय खेल",
+    "currentlyViewing": "वर्तमान में देख रहे हैं:",
+    "in": "में",
+    "clearAll": "सब साफ़ करें",
+    "otherEvents": "अन्य इवेंट"
   },
   "BettingSlip": {
     "errorTitle": "कुछ गलत हो गया",

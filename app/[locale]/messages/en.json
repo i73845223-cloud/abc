@@ -68,7 +68,19 @@
     "noBooksInCategory": "No books found in \"{category}\" category",
     "noBooksAvailableDescription": "There are no active betting books at the moment.",
     "noBooksInCategoryDescription": "There are no active betting books in this category at the moment.",
-    "viewAllEvents": "View All Events"
+    "viewAllEvents": "View All Events",
+    "searchPlaceholder": "Search events, teams, or championships...",
+    "clear": "Clear",
+    "searchingFor": "Searching for:",
+    "allSports": "All Sports",
+    "national": "National",
+    "allMatches": "All Matches",
+    "hotMatches": "Hot Matches",
+    "nationalSports": "National Sports",
+    "currentlyViewing": "Currently viewing:",
+    "in": "in",
+    "clearAll": "Clear All",
+    "otherEvents": "Other Events"
   },
   "BettingSlip": {
     "errorTitle": "Something went wrong",
