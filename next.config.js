@@ -25,6 +25,24 @@ const nextConfig = {
     };
     return config;
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/r/:code",
+          destination: "/register?ref=:code",
+        },
+        {
+          source: "/en/r/:code",
+          destination: "/en/register?ref=:code",
+        },
+        {
+          source: "/hi/r/:code",
+          destination: "/hi/register?ref=:code",
+        },
+      ],
+    };
+  },
 }
 
 module.exports = withNextIntl(nextConfig);

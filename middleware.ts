@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import createIntlMiddleware from 'next-intl/middleware';
 import authConfig from "./auth.config"
 import { DEFAULT_LOGIN_REDIRECT, apiAuthPrefix, authRoutes, bookRoute, publicRoutes, demoRoute } from "./routes"
+import { NextResponse } from "next/server";
 
 const intlMiddleware = createIntlMiddleware({
   locales: ['en', 'hi'],
@@ -25,18 +26,18 @@ export default auth((req) => {
   const isEnPublicRoute = publicRoutes.includes(`/en/${pathnameWithoutLocale}`)
   const isAuthRoute = authRoutes.includes(pathnameWithoutLocale)
 
+  const ref = nextUrl.searchParams.get("ref")
+  let response
+
   if (isApiRoute || isApiAuthRoute) {
-    return null
-  }
-
-  if (isAuthRoute) {
+    response = NextResponse.next()
+  } else if (isAuthRoute) {
     if (isLoggedIn) {
-      return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl))
+      response = NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl))
+    } else {
+      response = intlMiddleware(req)
     }
-    return intlMiddleware(req)
-  }
-
-  if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isDemoRoute && !isBookRoute) {
+  } else if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isDemoRoute && !isBookRoute) {
     let callbackUrl = nextUrl.pathname
     if (nextUrl.search) {
       callbackUrl += nextUrl.search
@@ -46,10 +47,20 @@ export default auth((req) => {
     const localePrefix = nextUrl.pathname.startsWith('/en') ? '/en' : nextUrl.pathname.startsWith('/hi') ? '/hi' : ''
     const redirectUrl = `${localePrefix}/login?callbackUrl=${encodedCallbackUrl}`
 
-    return Response.redirect(new URL(redirectUrl, nextUrl))
+    response = NextResponse.redirect(new URL(redirectUrl, nextUrl))
+  } else {
+    response = intlMiddleware(req)
   }
 
-  return intlMiddleware(req)
+  if (ref && response) {
+    response.cookies.set("affiliate_ref", ref, {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    })
+  }
+
+  return response
 })
 
 export const config = {

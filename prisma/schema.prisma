@@ -11,6 +11,8 @@ generator client {
 enum UserRole {
   ADMIN
   USER
+  AFFILIATE
+  MEDIA
 }
 
 model User {
