@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { CardWrapper } from "./card-wrapper"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useSearchParams } from 'next/navigation'
 
 import { RegisterSchema } from '@/schemas'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -13,7 +14,6 @@ import { Button } from '../ui/button'
 import { FormError } from '../form-error'
 import { FormSuccess } from '../form-success'
 import { register } from '@/actions/register'
-import { useSearchParams } from 'next/navigation'
 
 interface RegisterFormProps {
   refCode?: string | null;

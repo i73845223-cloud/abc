@@ -8,6 +8,7 @@ import { RegisterSchema } from '@/schemas';
 import { getUserByEmail } from '@/data/user';
 import { generateVerificationToken } from '@/lib/tokens';
 import { sendVerificationEmail } from '@/lib/mail';
+import { createBonusFromPromoCode } from '@/lib/bonus-utils';
 
 export const register = async (
   values: z.infer<typeof RegisterSchema>,
@@ -65,6 +66,19 @@ export const register = async (
         await db.promoCode.update({
           where: { id: promoCode.id },
           data: { currentUses: { increment: 1 } },
+        })
+
+        await createBonusFromPromoCode({
+          userId: user.id,
+          promoCodeId: promoCode.id,
+          type: promoCode.type,
+          wageringRequirement: promoCode.wageringRequirement,
+          bonusPercentage: promoCode.bonusPercentage,
+          maxBonusAmount: promoCode.maxBonusAmount,
+          minDepositAmount: promoCode.minDepositAmount,
+          freeSpinsCount: promoCode.freeSpinsCount,
+          freeSpinsGame: promoCode.freeSpinsGame,
+          cashbackPercentage: promoCode.cashbackPercentage,
         })
       }
     }
