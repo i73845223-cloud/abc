@@ -306,8 +306,9 @@ export default function ClientBookmakingDashboard({
                 ref={scrollContainerRef}
                 className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
               >
-                {CATEGORY_ORDER.filter(cat => initialCategories.includes(cat)).map((categorySlug) => {
-                  const icon = categoryIconMap[categorySlug.toLowerCase()];
+                {initialCategories.map((categorySlug) => {
+                  const normalizedSlug = categorySlug.toLowerCase();
+                  const icon = categoryIconMap[normalizedSlug] || SPORT_ICONS.football;
                   const displayName = formatCategoryForDisplay(categorySlug);
                   const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
                   return (
@@ -317,7 +318,7 @@ export default function ClientBookmakingDashboard({
                       className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
                     >
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                        {icon && (
+                        {icon ? (
                           <Image
                             src={icon}
                             alt={displayName}
@@ -325,6 +326,8 @@ export default function ClientBookmakingDashboard({
                             height={40}
                             className="object-contain"
                           />
+                        ) : (
+                          <Trophy className="h-8 w-8 text-white" />
                         )}
                       </div>
                       <span className="text-xs sm:text-sm font-medium text-center">
@@ -356,8 +359,9 @@ export default function ClientBookmakingDashboard({
               ref={scrollContainerRef}
               className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
             >
-              {CATEGORY_ORDER.filter(cat => initialCategories.includes(cat)).map((categorySlug) => {
-                const icon = categoryIconMap[categorySlug.toLowerCase()];
+              {initialCategories.map((categorySlug) => {
+                const normalizedSlug = categorySlug.toLowerCase();
+                const icon = categoryIconMap[normalizedSlug] || SPORT_ICONS.football;
                 const displayName = formatCategoryForDisplay(categorySlug);
                 const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
                 return (
@@ -367,7 +371,7 @@ export default function ClientBookmakingDashboard({
                     className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
                   >
                     <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
-                      {icon && (
+                      {icon ? (
                         <Image
                           src={icon}
                           alt={displayName}
@@ -375,6 +379,8 @@ export default function ClientBookmakingDashboard({
                           height={32}
                           className="object-contain"
                         />
+                      ) : (
+                        <Trophy className="h-6 w-6 text-white" />
                       )}
                     </div>
                     <span className="text-xs font-medium text-center">{displayName}</span>
