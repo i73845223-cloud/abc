@@ -51,7 +51,6 @@ const Banners = () => {
                           alt={`Banner ${banner.number}`}
                           fill
                           className="object-cover"
-                          unoptimized
                           sizes="(max-width: 768px) 80vw, (max-width: 1024px) 50vw, 33vw"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
