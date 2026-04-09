@@ -45,7 +45,11 @@ export default auth((req) => {
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl)
     const localePrefix = nextUrl.pathname.startsWith('/en') ? '/en' : nextUrl.pathname.startsWith('/hi') ? '/hi' : ''
-    const redirectUrl = `${localePrefix}/login?callbackUrl=${encodedCallbackUrl}`
+    let redirectUrl = `${localePrefix}/login?callbackUrl=${encodedCallbackUrl}`
+
+    if (ref) {
+      redirectUrl += `&ref=${encodeURIComponent(ref)}`
+    }
 
     response = NextResponse.redirect(new URL(redirectUrl, nextUrl))
   } else {

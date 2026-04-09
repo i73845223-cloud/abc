@@ -16,12 +16,21 @@ import { FormSuccess } from '../form-success'
 import { login } from '@/actions/login'
 import Link from 'next/link'
 
-export const LoginForm = () => {
-    const searchParams =  useSearchParams()
-    const callbackUrl = searchParams.get('callbackUrl')
+interface LoginFormProps {
+  refCode?: string | null;
+  callbackUrl?: string;
+}
+
+export const LoginForm = ({ refCode, callbackUrl: propCallbackUrl }: LoginFormProps) => {
+    const searchParams = useSearchParams()
+    const urlCallbackUrl = searchParams.get('callbackUrl')
+    const urlRef = searchParams.get('ref')
     const urlError = searchParams.get('error') === 'OAuthAccountNotLinked'
         ? 'Email already in use with different provider!'
         : ''
+
+    const finalCallbackUrl = propCallbackUrl || urlCallbackUrl
+    const finalRef = refCode || urlRef
 
     const [showTwoFactor, setShowTwoFactor] = useState(false)
     const [error, setError] = useState<string | undefined>('')
@@ -41,7 +50,7 @@ export const LoginForm = () => {
         setSuccess("");
         
         startTransition(() => {
-          login(values, callbackUrl)
+          login(values, finalCallbackUrl)
             .then((data) => {
               if (data?.error) {
                 form.reset()
@@ -59,13 +68,17 @@ export const LoginForm = () => {
             })
             .catch(() => setError("Something went wrong"));
         })
-      }
+    }
+
+    const registerHref = finalRef 
+      ? `/register?ref=${encodeURIComponent(finalRef)}` 
+      : "/register"
 
     return (
         <CardWrapper
             headerLabel="Welcome back"
-            backButtonLabel="Don't have an accout?"
-            backButtonHref="/register"
+            backButtonLabel="Don't have an account?"
+            backButtonHref={registerHref}
         >
             <Form {...form}>
                 <form
