@@ -71,6 +71,7 @@ interface ClientBookmakingDashboardProps {
 
 type FilterType = 'all' | 'hot' | 'national' | string;
 
+// Order of categories (must match QuickLinks order)
 const CATEGORY_ORDER = [
   'cricket',
   'football',
@@ -237,37 +238,84 @@ export default function ClientBookmakingDashboard({
     hasPrev: false,
   };
 
-  const categoriesWithBooks = [...new Set(books.map((book) => book.category.toLowerCase()))];
-  const sortedCategories = CATEGORY_ORDER.filter((cat) => categoriesWithBooks.includes(cat));
-
-  const booksByCountryAndChampionship = books.reduce((acc, book) => {
-    const country = book.country || 'International';
-    const championship = book.championship || 'Other';
-
-    if (!acc[country]) {
-      acc[country] = {};
-    }
-    if (!acc[country][championship]) {
-      acc[country][championship] = [];
-    }
-    acc[country][championship].push(book);
-    return acc;
-  }, {} as Record<string, Record<string, Book[]>>);
-
-  const sortedCountries = Object.keys(booksByCountryAndChampionship).sort((a, b) =>
-    a.localeCompare(b)
-  );
-
   const hasHotEvents = books.some((book) => book.isHotEvent);
   const hasNationalEvents = books.some((book) => book.isNationalSport);
   const hasChampionships = championships.length > 0;
   const currentCategoryDisplay = categoryParam ? formatCategoryForDisplay(categoryParam) : 'All Sports';
   const hasActiveSearchOrFilter = Boolean(searchQuery || activeFilter !== 'all');
+  const isMainPage = !categoryParam;
+  const showAccordionView = activeFilter === 'all' && !searchQuery;
 
-  const showAccordionView = activeFilter === 'all' && !searchQuery && !categoryParam;
+  // Helper: sort books with hot events first
+  const sortBooksByHot = (booksArray: Book[]) => {
+    return [...booksArray].sort((a, b) => {
+      if (a.isHotEvent && !b.isHotEvent) return -1;
+      if (!a.isHotEvent && b.isHotEvent) return 1;
+      return 0;
+    });
+  };
+
+  // Build grouped data for accordions
+  const getGroupedData = () => {
+    if (isMainPage) {
+      // Main page: group by category
+      const groupedByCategory: Record<string, Book[]> = {};
+      books.forEach((book) => {
+        const cat = book.category.toLowerCase();
+        if (!groupedByCategory[cat]) groupedByCategory[cat] = [];
+        groupedByCategory[cat].push(book);
+      });
+      // Sort categories according to CATEGORY_ORDER
+      const sortedCategories = CATEGORY_ORDER.filter((cat) => groupedByCategory[cat]);
+      const result = sortedCategories.map((cat) => ({
+        category: cat,
+        books: sortBooksByHot(groupedByCategory[cat]),
+      }));
+      return { type: 'main' as const, data: result };
+    } else {
+      // Category page: group by championship
+      const withChampionship: Record<string, Book[]> = {};
+      const withoutChampionship: Book[] = [];
+      books.forEach((book) => {
+        if (book.championship) {
+          if (!withChampionship[book.championship]) withChampionship[book.championship] = [];
+          withChampionship[book.championship].push(book);
+        } else {
+          withoutChampionship.push(book);
+        }
+      });
+      // Determine which championships have hot events
+      const championshipHasHot = Object.entries(withChampionship).reduce(
+        (acc, [champ, champBooks]) => {
+          acc[champ] = champBooks.some((b) => b.isHotEvent);
+          return acc;
+        },
+        {} as Record<string, boolean>
+      );
+      // Sort championships: hot first, then alphabetically
+      const sortedChampionships = Object.keys(withChampionship).sort((a, b) => {
+        if (championshipHasHot[a] && !championshipHasHot[b]) return -1;
+        if (!championshipHasHot[a] && championshipHasHot[b]) return 1;
+        return a.localeCompare(b);
+      });
+      return {
+        type: 'category' as const,
+        data: {
+          championships: sortedChampionships.map((champ) => ({
+            name: champ,
+            books: sortBooksByHot(withChampionship[champ]),
+          })),
+          noChampionshipBooks: sortBooksByHot(withoutChampionship),
+        },
+      };
+    }
+  };
+
+  const groupedData = showAccordionView ? getGroupedData() : null;
 
   return (
     <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
+      {/* Search Card */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="relative">
@@ -298,17 +346,31 @@ export default function ClientBookmakingDashboard({
         </CardContent>
       </Card>
 
+      {/* Circular Category Quick Links + All Sports Button */}
       {initialCategories.length > 0 && (
         <div className="my-4">
+          {/* Desktop */}
           <div className="relative hidden sm:block">
             <div className="relative group/carousel">
               <div
                 ref={scrollContainerRef}
                 className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
               >
+                {/* All Sports Button */}
+                <Link
+                  href="/book"
+                  className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
+                    <Flame className="h-8 w-8 text-orange-500" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium text-center">All Sports</span>
+                </Link>
+
+                {/* Category Circles */}
                 {initialCategories.map((categorySlug) => {
                   const normalizedSlug = categorySlug.toLowerCase();
-                  const icon = categoryIconMap[normalizedSlug] || SPORT_ICONS.football;
+                  const icon = categoryIconMap[normalizedSlug];
                   const displayName = formatCategoryForDisplay(categorySlug);
                   const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
                   return (
@@ -354,14 +416,27 @@ export default function ClientBookmakingDashboard({
             </div>
           </div>
 
+          {/* Mobile */}
           <div className="relative sm:hidden">
             <div
               ref={scrollContainerRef}
               className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
             >
+              {/* All Sports Button */}
+              <Link
+                href="/book"
+                className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
+              >
+                <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                  <Flame className="h-6 w-6 text-orange-500" />
+                </div>
+                <span className="text-xs font-medium text-center">All Sports</span>
+              </Link>
+
+              {/* Category Circles */}
               {initialCategories.map((categorySlug) => {
                 const normalizedSlug = categorySlug.toLowerCase();
-                const icon = categoryIconMap[normalizedSlug] || SPORT_ICONS.football;
+                const icon = categoryIconMap[normalizedSlug];
                 const displayName = formatCategoryForDisplay(categorySlug);
                 const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
                 return (
@@ -391,7 +466,8 @@ export default function ClientBookmakingDashboard({
           </div>
         </div>
       )}
-      
+
+      {/* Existing Category Filter Buttons (optional) */}
       {categories.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-4">
@@ -428,6 +504,7 @@ export default function ClientBookmakingDashboard({
         </Card>
       )}
 
+      {/* Filters Card */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -538,6 +615,7 @@ export default function ClientBookmakingDashboard({
         </CardContent>
       </Card>
 
+      {/* Books List */}
       {books.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
@@ -559,73 +637,109 @@ export default function ClientBookmakingDashboard({
             )}
           </div>
 
-          {showAccordionView ? (
-            /* Accordion View: Grouped by Country → Championship */
-            <div className="space-y-6">
-              {sortedCountries.map((country) => {
-                const championships = booksByCountryAndChampionship[country];
-                const championshipNames = Object.keys(championships).sort();
-                const totalBooksInCountry = championshipNames.reduce(
-                  (sum, champ) => sum + championships[champ].length,
-                  0
-                );
-
-                return (
-                  <Accordion
-                    key={country}
-                    type="single"
-                    collapsible
-                    defaultValue={country}
-                    className="border rounded-lg overflow-hidden"
-                  >
-                    <AccordionItem value={country} className="border-none">
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <Globe className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-semibold text-base">{country}</span>
-                          <Badge variant="secondary" className="ml-2">
-                            {totalBooksInCountry}
-                          </Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-4 pt-2 pb-4">
-                        <div className="space-y-4">
-                          {championshipNames.map((championship) => {
-                            const champBooks = championships[championship];
-                            return (
-                              <div key={championship} className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <Trophy className="h-4 w-4 text-yellow-500" />
-                                  <h3 className="font-medium text-sm">{championship}</h3>
-                                  <Badge variant="outline" className="text-xs">
-                                    {champBooks.length}
-                                  </Badge>
-                                </div>
-                                <div className="space-y-3">
-                                  {champBooks.map((book) => (
-                                    <BookCard
-                                      key={book.id}
-                                      book={book}
-                                      onOutcomeClick={handleOutcomeClick}
-                                      currentCategory={categoryParam}
-                                      isUserLoggedIn={!!session}
-                                      showChampionshipLink={false}
-                                      searchQuery={searchQuery}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                );
-              })}
+          {showAccordionView && groupedData ? (
+            <div className="space-y-4">
+              {groupedData.type === 'main' ? (
+                // Main page: Sport accordions with images
+                groupedData.data.map(({ category, books }) => {
+                  const icon = categoryIconMap[category];
+                  const displayName = formatCategoryForDisplay(category);
+                  return (
+                    <Accordion key={category} type="single" collapsible className="border rounded-lg overflow-hidden">
+                      <AccordionItem value={category} className="border-none">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            {icon && (
+                              <Image
+                                src={icon}
+                                alt={displayName}
+                                width={24}
+                                height={24}
+                                className="object-contain"
+                              />
+                            )}
+                            <span className="font-semibold text-base">{displayName}</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {books.length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pt-2 pb-4">
+                          <div className="space-y-3">
+                            {books.map((book) => (
+                              <BookCard
+                                key={book.id}
+                                book={book}
+                                onOutcomeClick={handleOutcomeClick}
+                                currentCategory={categoryParam}
+                                isUserLoggedIn={!!session}
+                                showChampionshipLink={true}
+                                searchQuery={searchQuery}
+                              />
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  );
+                })
+              ) : (
+                // Category page: Championship accordions + books without championship
+                <>
+                  {groupedData.data.championships.map(({ name, books }) => (
+                    <Accordion key={name} type="single" collapsible className="border rounded-lg overflow-hidden">
+                      <AccordionItem value={name} className="border-none">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            <Trophy className="h-5 w-5 text-yellow-500" />
+                            <span className="font-semibold text-base">{name}</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {books.length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pt-2 pb-4">
+                          <div className="space-y-3">
+                            {books.map((book) => (
+                              <BookCard
+                                key={book.id}
+                                book={book}
+                                onOutcomeClick={handleOutcomeClick}
+                                currentCategory={categoryParam}
+                                isUserLoggedIn={!!session}
+                                showChampionshipLink={false}
+                                searchQuery={searchQuery}
+                              />
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ))}
+                  {groupedData.data.noChampionshipBooks.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                        <Trophy className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-medium text-sm text-muted-foreground">Other Events</h3>
+                      </div>
+                      {groupedData.data.noChampionshipBooks.map((book) => (
+                        <BookCard
+                          key={book.id}
+                          book={book}
+                          onOutcomeClick={handleOutcomeClick}
+                          currentCategory={categoryParam}
+                          isUserLoggedIn={!!session}
+                          showChampionshipLink={false}
+                          searchQuery={searchQuery}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           ) : (
-            /* Flat List View (when filters or search are active) */
+            // Flat list when filters/search are active
             <div className="space-y-4">
               {books.map((book) => (
                 <BookCard
