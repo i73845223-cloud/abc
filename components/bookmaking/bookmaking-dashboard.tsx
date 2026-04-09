@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import BettingSlipWrapper from './betting-slip-wrapper';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -119,14 +119,21 @@ export default function ClientBookmakingDashboard({
 }: ClientBookmakingDashboardProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = useTranslations('Events');
   const locale = useLocale();
   const [selectedOutcome, setSelectedOutcome] = useState<SelectedOutcome | null>(null);
   const [isSlipOpen, setIsSlipOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterType>(filterParam || 'all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState(searchParam || '');
   const [championships, setChampionships] = useState<string[]>(initialChampionships);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const filterFromUrl = searchParams.get('filter') || 'all';
+    setActiveFilter(filterFromUrl);
+  }, [searchParams]);
 
   const debouncedSearch = useDebounce(searchQuery, 500);
 
@@ -167,7 +174,7 @@ export default function ClientBookmakingDashboard({
     }
     url.searchParams.delete('page');
     router.push(url.toString());
-  }, [debouncedSearch, activeFilter, router]);
+  }, [debouncedSearch, activeFilter, router, pathname]);
 
   const handleOutcomeClick = (outcome: any, event: any, book: any) => {
     if (!session) {
@@ -321,7 +328,7 @@ export default function ClientBookmakingDashboard({
   const nationalIcon = SPORT_ICONS.india;
 
   return (
-    <div className="max-w-[1000px] mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
+    <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="relative">
@@ -594,64 +601,6 @@ export default function ClientBookmakingDashboard({
               })}
             </div>
           </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={activeFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleFilterChange('all')}
-          className="text-xs sm:text-sm"
-        >
-          {t('allMatches')}
-        </Button>
-        {hasHotEvents && (
-          <Button
-            variant={activeFilter === 'hot' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('hot')}
-            className="text-xs sm:text-sm"
-          >
-            <Flame className="h-3 w-3 mr-1" />
-            {t('hotMatches')}
-          </Button>
-        )}
-        {hasNationalEvents && (
-          <Button
-            variant={activeFilter === 'national' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('national')}
-            className="text-xs sm:text-sm"
-          >
-            <Globe className="h-3 w-3 mr-1" />
-            {t('nationalSports')}
-          </Button>
-        )}
-      </div>
-
-      {hasActiveSearchOrFilter && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">{t('currentlyViewing')}</span>
-          {searchQuery && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Search className="h-3 w-3" />
-              {searchQuery}
-            </Badge>
-          )}
-          {activeFilter !== 'all' && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              {activeFilter === 'hot' && <Flame className="h-3 w-3" />}
-              {activeFilter === 'national' && <Globe className="h-3 w-3" />}
-              {activeFilter !== 'hot' && activeFilter !== 'national' && <Trophy className="h-3 w-3" />}
-              {activeFilter === 'hot' ? t('hotMatches') : activeFilter === 'national' ? t('nationalSports') : activeFilter}
-            </Badge>
-          )}
-          <span className="text-muted-foreground">{t('in')}</span>
-          <Badge variant="outline">{currentCategoryDisplay}</Badge>
-          <Button variant="ghost" size="sm" onClick={handleClearSearch} className="h-6 text-xs">
-            {t('clearAll')}
-          </Button>
         </div>
       )}
 
