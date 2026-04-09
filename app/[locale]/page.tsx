@@ -17,7 +17,7 @@ function HomeContent() {
     <>
       <Header />
       <div className="pb-[45px] sm:pb-0 pt-[66px]">
-        <div className="max-w-[800px] mx-auto px-3 sm:px-8">
+        <div className="max-w-[800px] mx-auto sm:px-8">
           <Banners />
           <QuickLinks />
           <div className="px-3 mb-8">

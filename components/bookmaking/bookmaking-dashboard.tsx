@@ -22,6 +22,13 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import {
   Trophy,
   ArrowRight,
   Star,
@@ -40,7 +47,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useDebounce } from '@/hooks/use-debounce';
 import Image from 'next/image';
 import { SPORT_ICONS } from '@/lib/images';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../ui/carousel';
 
 interface SelectedOutcome {
   id: string;
@@ -244,8 +250,6 @@ export default function ClientBookmakingDashboard({
   const isMainPage = !categoryParam;
   const showAccordionView = activeFilter === 'all' && !searchQuery;
 
-  const shouldOpenAccordions = !isMainPage && books.length < 3;
-
   const sortBooksByHot = (booksArray: Book[]) => {
     return [...booksArray].sort((a, b) => {
       if (a.isHotEvent && !b.isHotEvent) return -1;
@@ -317,7 +321,7 @@ export default function ClientBookmakingDashboard({
   const nationalIcon = SPORT_ICONS.india;
 
   return (
-    <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
+    <div className="max-w-[1000px] mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="relative">
@@ -400,7 +404,7 @@ export default function ClientBookmakingDashboard({
                   >
                     <div
                       className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                        activeFilter === 'national'
+                        !categoryParam && activeFilter === 'national'
                           ? 'border-primary border-2'
                           : 'border-gray-500 border'
                       }`}
@@ -419,7 +423,7 @@ export default function ClientBookmakingDashboard({
                     </div>
                     <span
                       className={`text-xs sm:text-sm font-medium text-center ${
-                        activeFilter === 'national' ? 'text-primary' : ''
+                        !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
                       }`}
                     >
                       {t('national')}
@@ -520,7 +524,7 @@ export default function ClientBookmakingDashboard({
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    activeFilter === 'national'
+                    !categoryParam && activeFilter === 'national'
                       ? 'border-primary border-2'
                       : 'border-gray-500 border'
                   }`}
@@ -539,7 +543,7 @@ export default function ClientBookmakingDashboard({
                 </div>
                 <span
                   className={`text-xs font-medium text-center ${
-                    activeFilter === 'national' ? 'text-primary' : ''
+                    !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
                   }`}
                 >
                   {t('national')}
@@ -593,6 +597,64 @@ export default function ClientBookmakingDashboard({
         </div>
       )}
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={activeFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleFilterChange('all')}
+          className="text-xs sm:text-sm"
+        >
+          {t('allMatches')}
+        </Button>
+        {hasHotEvents && (
+          <Button
+            variant={activeFilter === 'hot' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleFilterChange('hot')}
+            className="text-xs sm:text-sm"
+          >
+            <Flame className="h-3 w-3 mr-1" />
+            {t('hotMatches')}
+          </Button>
+        )}
+        {hasNationalEvents && (
+          <Button
+            variant={activeFilter === 'national' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleFilterChange('national')}
+            className="text-xs sm:text-sm"
+          >
+            <Globe className="h-3 w-3 mr-1" />
+            {t('nationalSports')}
+          </Button>
+        )}
+      </div>
+
+      {hasActiveSearchOrFilter && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">{t('currentlyViewing')}</span>
+          {searchQuery && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Search className="h-3 w-3" />
+              {searchQuery}
+            </Badge>
+          )}
+          {activeFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              {activeFilter === 'hot' && <Flame className="h-3 w-3" />}
+              {activeFilter === 'national' && <Globe className="h-3 w-3" />}
+              {activeFilter !== 'hot' && activeFilter !== 'national' && <Trophy className="h-3 w-3" />}
+              {activeFilter === 'hot' ? t('hotMatches') : activeFilter === 'national' ? t('nationalSports') : activeFilter}
+            </Badge>
+          )}
+          <span className="text-muted-foreground">{t('in')}</span>
+          <Badge variant="outline">{currentCategoryDisplay}</Badge>
+          <Button variant="ghost" size="sm" onClick={handleClearSearch} className="h-6 text-xs">
+            {t('clearAll')}
+          </Button>
+        </div>
+      )}
+
       {filteredBooks.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
@@ -613,7 +675,7 @@ export default function ClientBookmakingDashboard({
                       key={category}
                       type="single"
                       collapsible
-                      defaultValue={shouldOpenAccordions ? category : undefined}
+                      defaultValue={books.length < 5 ? category : undefined}
                       className="border rounded-lg overflow-hidden"
                     >
                       <AccordionItem value={category} className="border-none">
@@ -660,7 +722,7 @@ export default function ClientBookmakingDashboard({
                       key={name}
                       type="single"
                       collapsible
-                      defaultValue={shouldOpenAccordions ? name : undefined}
+                      defaultValue={books.length < 5 ? name : undefined}
                       className="border rounded-lg overflow-hidden"
                     >
                       <AccordionItem value={name} className="border-none">

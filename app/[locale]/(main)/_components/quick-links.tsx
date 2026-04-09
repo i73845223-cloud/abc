@@ -74,7 +74,7 @@ export default function QuickLinks() {
                       />
                     )}
                   </div>
-                  <span className="text-xs sm:text-sm font-medium text-center">
+                  <span className="text-xs sm:text-sm font-medium text-center block w-full min-w-0 truncate">
                     {item.label}
                   </span>
                 </Link>
@@ -109,7 +109,7 @@ export default function QuickLinks() {
                   />
                 )}
               </div>
-              <span className="text-xs font-medium text-center">
+              <span className="text-xs font-medium text-center block w-full min-w-0 truncate">
                 {item.label}
               </span>
             </Link>
