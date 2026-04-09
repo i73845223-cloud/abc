@@ -11,7 +11,7 @@ export default function CricketMatchesHeader() {
   const t = useTranslations('Home')
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div className="flex flex-row items-center justify-between gap-2">
       <div className="flex items-center gap-3 ml-2">
         <Image
           src={SPORT_ICONS.cricket}
@@ -20,14 +20,14 @@ export default function CricketMatchesHeader() {
           height={32}
           className="object-contain"
         />
-        <h2 className="text-2xl font-bold tracking-tight">{t('cricket')}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t('cricket')}</h2>
       </div>
       
-      <Link href="/book/category/cricket" className="w-full sm:w-auto">
-        <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto justify-center">
+      <Link href="/book/category/cricket" className="w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-center text-gray-400">
           {t('viewAll')}
           <ArrowRight className="h-4 w-4" />
-        </Button>
+        </div>
       </Link>
     </div>
   )

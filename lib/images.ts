@@ -22,7 +22,19 @@ export const SLOT_GAME_IMAGES = {
 } as const;
 
 export const SPORT_ICONS = {
+  india: getImageUrl('india.webp'),
+  promo: getImageUrl('promo.webp'),
   football: getImageUrl('football.webp'),
   cricket: getImageUrl('cricket.webp'),
   basketball: getImageUrl('basketball.webp'),
+  tennis: getImageUrl('tennis.webp'),
+  tabletennis: getImageUrl('table-tennis.webp'),
+  horse: getImageUrl('horse.webp'),
+  gaming: getImageUrl('gaming.webp'),
+  kabaddi: getImageUrl('kabaddi.webp'),
+  badminton: getImageUrl('badminton.webp'),
+  volleyball: getImageUrl('volleyball.webp'),
+  boxing: getImageUrl('boxing.webp'),
+  mma: getImageUrl('mma.webp'),
+  ufc: getImageUrl('ufc.webp'),
 } as const;

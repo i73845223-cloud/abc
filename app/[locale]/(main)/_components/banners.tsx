@@ -42,7 +42,7 @@ const Banners = () => {
               const fallbackKey = `${banner.number}en` as keyof typeof BANNER_IMAGES;
               
               return (
-                <CarouselItem key={banner.number} className="pl-0 md:pl-1 md:basis-1/2">
+                <CarouselItem key={banner.number} className="pl-0 md:pl-1">
                   <div className="md:p-0.5">
                     <Link href={banner.href} className="block" prefetch={false}>
                       <div className="relative w-full aspect-[5/2] md:rounded-md overflow-hidden">

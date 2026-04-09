@@ -4,8 +4,6 @@ import { auth } from '@/auth'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { BalanceProvider } from '@/contexts/balance-context'
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import hiMessages from './messages/hi.json';
 import enMessages from './messages/en.json';
 
@@ -45,8 +43,6 @@ export default async function LocaleLayout({
             <BalanceProvider>
               <Toaster />
               {children}
-              <Analytics />
-              <SpeedInsights />
             </BalanceProvider>
           </ThemeProvider>
         </SessionWrapper>
