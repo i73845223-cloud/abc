@@ -40,6 +40,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useDebounce } from '@/hooks/use-debounce';
 import Image from 'next/image';
 import { SPORT_ICONS } from '@/lib/images';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../ui/carousel';
 
 interface SelectedOutcome {
   id: string;
@@ -348,142 +349,201 @@ export default function ClientBookmakingDashboard({
       </Card>
 
       {initialCategories.length > 0 && (
-        <div className="my-4">
+        <div className="mt-3 mb-1 sm:mt-6 sm:mb-3 px-1">
           <div className="relative hidden sm:block">
-            <div className="relative group/carousel">
-              <div
-                ref={scrollContainerRef}
-                className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
-              >
-                <Link
-                  href="/book"
-                  className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                    {fireIcon ? (
-                      <Image
-                        src={fireIcon}
-                        alt={t('allSports')}
-                        width={40}
-                        height={40}
-                        className="object-contain"
-                      />
-                    ) : (
-                      <Flame className="h-8 w-8 text-orange-500" />
-                    )}
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-center">{t('allSports')}</span>
-                </Link>
+            <Carousel
+              opts={{
+                align: 'start',
+                loop: false,
+              }}
+              className="w-full group/carousel"
+            >
+              <CarouselContent className="-ml-2">
+                <CarouselItem className="pl-2 basis-auto">
+                  <Link
+                    href="/book"
+                    className="flex flex-col items-center gap-1 min-w-[72px] group"
+                  >
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                        !categoryParam && activeFilter === 'all'
+                          ? 'border-primary border-2'
+                          : 'border-gray-500 border'
+                      }`}
+                    >
+                      {fireIcon ? (
+                        <Image
+                          src={fireIcon}
+                          alt={t('allSports')}
+                          width={32}
+                          height={32}
+                          className="object-contain transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <Flame className="h-8 w-8 text-orange-500" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs sm:text-sm font-medium text-center ${
+                        !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
+                      }`}
+                    >
+                      {t('allSports')}
+                    </span>
+                  </Link>
+                </CarouselItem>
 
-                <Link
-                  href="/book?filter=national"
-                  className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                    {nationalIcon ? (
-                      <Image
-                        src={nationalIcon}
-                        alt={t('national')}
-                        width={40}
-                        height={40}
-                        className="object-contain"
-                      />
-                    ) : (
-                      <Globe className="h-8 w-8 text-blue-500" />
-                    )}
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-center">{t('national')}</span>
-                </Link>
+                <CarouselItem className="pl-2 basis-auto">
+                  <Link
+                    href="/book?filter=national"
+                    className="flex flex-col items-center gap-1 min-w-[72px] group"
+                  >
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                        activeFilter === 'national'
+                          ? 'border-primary border-2'
+                          : 'border-gray-500 border'
+                      }`}
+                    >
+                      {nationalIcon ? (
+                        <Image
+                          src={nationalIcon}
+                          alt={t('national')}
+                          width={32}
+                          height={32}
+                          className="object-contain transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <Globe className="h-8 w-8 text-blue-500" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs sm:text-sm font-medium text-center ${
+                        activeFilter === 'national' ? 'text-primary' : ''
+                      }`}
+                    >
+                      {t('national')}
+                    </span>
+                  </Link>
+                </CarouselItem>
 
                 {initialCategories.map((categorySlug) => {
                   const normalizedSlug = categorySlug.toLowerCase();
                   const icon = categoryIconMap[normalizedSlug];
                   const displayName = formatCategoryForDisplay(categorySlug);
                   const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
+                  const isActive = categoryParam?.toLowerCase() === normalizedSlug;
+
                   return (
-                    <Link
-                      key={categorySlug}
-                      href={href}
-                      className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
-                    >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                        {icon ? (
-                          <Image
-                            src={icon}
-                            alt={displayName}
-                            width={40}
-                            height={40}
-                            className="object-contain"
-                          />
-                        ) : (
-                          <Trophy className="h-8 w-8 text-white" />
-                        )}
-                      </div>
-                      <span className="text-xs sm:text-sm font-medium text-center">{displayName}</span>
-                    </Link>
+                    <CarouselItem key={categorySlug} className="pl-2 basis-auto">
+                      <Link
+                        href={href}
+                        className="flex flex-col items-center gap-1 min-w-[72px] group"
+                      >
+                        <div
+                          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                            isActive
+                              ? 'border-primary border-2'
+                              : 'border-gray-500 border'
+                          }`}
+                        >
+                          {icon ? (
+                            <Image
+                              src={icon}
+                              alt={displayName}
+                              width={32}
+                              height={32}
+                              className="object-contain transition-transform group-hover:scale-105"
+                            />
+                          ) : (
+                            <Trophy className="h-8 w-8 text-white" />
+                          )}
+                        </div>
+                        <span
+                          className={`text-xs sm:text-sm font-medium text-center ${
+                            isActive ? 'text-primary' : ''
+                          }`}
+                        >
+                          {displayName}
+                        </span>
+                      </Link>
+                    </CarouselItem>
                   );
                 })}
-              </div>
-              <button
-                onClick={() => scrollQuickLinks('left')}
-                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border rounded-full h-8 w-8 items-center justify-center shadow-md"
-                aria-label="Scroll left"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => scrollQuickLinks('right')}
-                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border rounded-full h-8 w-8 items-center justify-center shadow-md"
-                aria-label="Scroll right"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+              </CarouselContent>
+
+              <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
+              <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
+            </Carousel>
           </div>
 
           <div className="relative sm:hidden">
             <div
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
+              className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
             >
               <Link
                 href="/book"
-                className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
+                className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
               >
-                <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    !categoryParam && activeFilter === 'all'
+                      ? 'border-primary border-2'
+                      : 'border-gray-500 border'
+                  }`}
+                >
                   {fireIcon ? (
                     <Image
                       src={fireIcon}
                       alt={t('allSports')}
-                      width={32}
-                      height={32}
-                      className="object-contain"
+                      width={24}
+                      height={24}
+                      className="object-contain transition-transform group-hover:scale-105"
                     />
                   ) : (
                     <Flame className="h-6 w-6 text-orange-500" />
                   )}
                 </div>
-                <span className="text-xs font-medium text-center">{t('allSports')}</span>
+                <span
+                  className={`text-xs font-medium text-center ${
+                    !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
+                  }`}
+                >
+                  {t('allSports')}
+                </span>
               </Link>
 
               <Link
                 href="/book?filter=national"
-                className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
+                className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
               >
-                <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    activeFilter === 'national'
+                      ? 'border-primary border-2'
+                      : 'border-gray-500 border'
+                  }`}
+                >
                   {nationalIcon ? (
                     <Image
                       src={nationalIcon}
                       alt={t('national')}
-                      width={32}
-                      height={32}
-                      className="object-contain"
+                      width={24}
+                      height={24}
+                      className="object-contain transition-transform group-hover:scale-105"
                     />
                   ) : (
-                    <Globe className="h-8 w-8 text-blue-500" />
+                    <Globe className="h-6 w-6 text-blue-500" />
                   )}
                 </div>
-                <span className="text-xs font-medium text-center">{t('national')}</span>
+                <span
+                  className={`text-xs font-medium text-center ${
+                    activeFilter === 'national' ? 'text-primary' : ''
+                  }`}
+                >
+                  {t('national')}
+                </span>
               </Link>
 
               {initialCategories.map((categorySlug) => {
@@ -491,26 +551,40 @@ export default function ClientBookmakingDashboard({
                 const icon = categoryIconMap[normalizedSlug];
                 const displayName = formatCategoryForDisplay(categorySlug);
                 const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
+                const isActive = categoryParam?.toLowerCase() === normalizedSlug;
+
                 return (
                   <Link
                     key={categorySlug}
                     href={href}
-                    className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
+                    className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
                   >
-                    <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        isActive
+                          ? 'border-primary border-2'
+                          : 'border-gray-500 border'
+                      }`}
+                    >
                       {icon ? (
                         <Image
                           src={icon}
                           alt={displayName}
-                          width={32}
-                          height={32}
-                          className="object-contain"
+                          width={24}
+                          height={24}
+                          className="object-contain transition-transform group-hover:scale-105"
                         />
                       ) : (
                         <Trophy className="h-6 w-6 text-white" />
                       )}
                     </div>
-                    <span className="text-xs font-medium text-center">{displayName}</span>
+                    <span
+                      className={`text-xs font-medium text-center ${
+                        isActive ? 'text-primary' : ''
+                      }`}
+                    >
+                      {displayName}
+                    </span>
                   </Link>
                 );
               })}
