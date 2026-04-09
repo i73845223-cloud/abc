@@ -19,7 +19,7 @@ export default function QuickLinks() {
 
   const links = [
     { href: '/promo', label: t('promo'), icon: SPORT_ICONS.promo },
-    { href: '/book', label: t('national'), icon: SPORT_ICONS.india },
+    { href: '/book?filter=national', label: t('national'), icon: SPORT_ICONS.india },
     { href: '/book/category/cricket', label: t('cricket'), icon: SPORT_ICONS.cricket },
     { href: '/book/category/football', label: t('football'), icon: SPORT_ICONS.football },
     { href: '/book/category/basketball', label: t('basketball'), icon: SPORT_ICONS.basketball },
