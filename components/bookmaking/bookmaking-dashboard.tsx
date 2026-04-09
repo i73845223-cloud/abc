@@ -71,7 +71,6 @@ interface ClientBookmakingDashboardProps {
 
 type FilterType = 'all' | 'hot' | 'national' | string;
 
-// Define the order of categories (must match QuickLinks order)
 const CATEGORY_ORDER = [
   'cricket',
   'football',
@@ -88,7 +87,6 @@ const CATEGORY_ORDER = [
   'ufc',
 ];
 
-// Map category slugs to icon paths
 const categoryIconMap: Record<string, string> = {
   cricket: SPORT_ICONS.cricket,
   football: SPORT_ICONS.football,
@@ -239,12 +237,9 @@ export default function ClientBookmakingDashboard({
     hasPrev: false,
   };
 
-  // Derive categories that actually have books (for circular links)
   const categoriesWithBooks = [...new Set(books.map((book) => book.category.toLowerCase()))];
   const sortedCategories = CATEGORY_ORDER.filter((cat) => categoriesWithBooks.includes(cat));
 
-  // --- Group books for accordion view ---
-  // Group by country, then by championship
   const booksByCountryAndChampionship = books.reduce((acc, book) => {
     const country = book.country || 'International';
     const championship = book.championship || 'Other';
@@ -259,7 +254,6 @@ export default function ClientBookmakingDashboard({
     return acc;
   }, {} as Record<string, Record<string, Book[]>>);
 
-  // Sort countries alphabetically (or you can define a custom order)
   const sortedCountries = Object.keys(booksByCountryAndChampionship).sort((a, b) =>
     a.localeCompare(b)
   );
@@ -270,12 +264,10 @@ export default function ClientBookmakingDashboard({
   const currentCategoryDisplay = categoryParam ? formatCategoryForDisplay(categoryParam) : 'All Sports';
   const hasActiveSearchOrFilter = Boolean(searchQuery || activeFilter !== 'all');
 
-  // Determine if we should show the accordion view (no filter, no search, no category param)
   const showAccordionView = activeFilter === 'all' && !searchQuery && !categoryParam;
 
   return (
     <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
-      {/* Search Card */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="relative">
@@ -306,17 +298,15 @@ export default function ClientBookmakingDashboard({
         </CardContent>
       </Card>
 
-      {/* Circular Category Quick Links (only categories with books) */}
-      {categoriesWithBooks.length > 0 && (
+      {initialCategories.length > 0 && (
         <div className="my-4">
-          {/* Desktop: shadcn Carousel style with arrows */}
           <div className="relative hidden sm:block">
             <div className="relative group/carousel">
               <div
                 ref={scrollContainerRef}
                 className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
               >
-                {sortedCategories.map((categorySlug) => {
+                {CATEGORY_ORDER.filter(cat => initialCategories.includes(cat)).map((categorySlug) => {
                   const icon = categoryIconMap[categorySlug.toLowerCase()];
                   const displayName = formatCategoryForDisplay(categorySlug);
                   const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
@@ -361,13 +351,12 @@ export default function ClientBookmakingDashboard({
             </div>
           </div>
 
-          {/* Mobile: native scroll with snap */}
           <div className="relative sm:hidden">
             <div
               ref={scrollContainerRef}
               className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
             >
-              {sortedCategories.map((categorySlug) => {
+              {CATEGORY_ORDER.filter(cat => initialCategories.includes(cat)).map((categorySlug) => {
                 const icon = categoryIconMap[categorySlug.toLowerCase()];
                 const displayName = formatCategoryForDisplay(categorySlug);
                 const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
@@ -396,8 +385,7 @@ export default function ClientBookmakingDashboard({
           </div>
         </div>
       )}
-
-      {/* Existing Category Filter Buttons (optional, kept for additional navigation) */}
+      
       {categories.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-4">
@@ -434,7 +422,6 @@ export default function ClientBookmakingDashboard({
         </Card>
       )}
 
-      {/* Filters Card */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -545,7 +532,6 @@ export default function ClientBookmakingDashboard({
         </CardContent>
       </Card>
 
-      {/* Books List */}
       {books.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
@@ -668,7 +654,6 @@ export default function ClientBookmakingDashboard({
   );
 }
 
-// ---------- BookCard Component (unchanged, included for completeness) ----------
 function BookCard({
   book,
   onOutcomeClick,
@@ -934,7 +919,6 @@ function BookCard({
   );
 }
 
-// ---------- NoBooksCard Component ----------
 function NoBooksCard({
   category,
   filter,
@@ -993,7 +977,6 @@ function NoBooksCard({
   );
 }
 
-// ---------- ShadcnPagination Component ----------
 function ShadcnPagination({
   pagination,
   onPageChange,

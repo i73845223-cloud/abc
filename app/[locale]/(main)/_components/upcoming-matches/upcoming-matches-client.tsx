@@ -77,7 +77,7 @@ export default function UpcomingMatchesClient({ books = [] }: UpcomingMatchesCli
         >
           <CarouselContent className="-ml-2">
             {books.map((book) => (
-              <CarouselItem key={book.id} className="pl-1 md:pl-2 basis-4/5 sm:basis-1/2 lg:basis-1/3">
+              <CarouselItem key={book.id} className="pl-1 md:pl-2 basis-4/5 sm:basis-1/2">
                 <MatchCard 
                   book={book} 
                   onOutcomeClick={handleOutcomeClick}
