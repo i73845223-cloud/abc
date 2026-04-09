@@ -16,6 +16,23 @@ export default auth((req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
 
+  const ref = nextUrl.searchParams.get("ref")
+  const cookieOptions = {
+    maxAge: 60 * 60 * 24 * 30,
+    path: "/",
+    sameSite: "lax" as const,
+  }
+
+  const rPathMatch = nextUrl.pathname.match(/^(\/(en|hi))?\/r\/([A-Z0-9]+)$/)
+  if (rPathMatch) {
+    const localePrefix = rPathMatch[1] || ''
+    const code = rPathMatch[3]
+    const registerUrl = new URL(`${localePrefix}/register?ref=${code}`, nextUrl)
+    const response = NextResponse.redirect(registerUrl)
+    response.cookies.set("affiliate_ref", code, cookieOptions)
+    return response
+  }
+
   const isApiRoute = nextUrl.pathname.startsWith('/api')
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix)
   const isBookRoute = nextUrl.pathname.startsWith(bookRoute)
@@ -26,7 +43,6 @@ export default auth((req) => {
   const isEnPublicRoute = publicRoutes.includes(`/en/${pathnameWithoutLocale}`)
   const isAuthRoute = authRoutes.includes(pathnameWithoutLocale)
 
-  const ref = nextUrl.searchParams.get("ref")
   let response
 
   if (isApiRoute || isApiAuthRoute) {
@@ -57,11 +73,7 @@ export default auth((req) => {
   }
 
   if (ref && response) {
-    response.cookies.set("affiliate_ref", ref, {
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-      sameSite: "lax",
-    })
+    response.cookies.set("affiliate_ref", ref, cookieOptions)
   }
 
   return response
