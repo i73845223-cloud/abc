@@ -37,4 +37,5 @@ export const SPORT_ICONS = {
   boxing: getImageUrl('boxing.webp'),
   mma: getImageUrl('mma.webp'),
   ufc: getImageUrl('ufc.webp'),
+  fire: getImageUrl('fire.webp'),
 } as const;

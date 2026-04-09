@@ -26,13 +26,11 @@ import {
   ArrowRight,
   Star,
   Flame,
-  Zap,
   Calendar,
-  Filter,
   Search,
-  Globe,
   ChevronLeft,
   ChevronRight,
+  Globe,
 } from 'lucide-react';
 import BettingSlipWrapper from './betting-slip-wrapper';
 import Link from 'next/link';
@@ -71,7 +69,7 @@ interface ClientBookmakingDashboardProps {
 
 type FilterType = 'all' | 'hot' | 'national' | string;
 
-// Order of categories (must match QuickLinks order)
+// Category order matching QuickLinks
 const CATEGORY_ORDER = [
   'cricket',
   'football',
@@ -115,12 +113,13 @@ export default function ClientBookmakingDashboard({
 }: ClientBookmakingDashboardProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const t = useTranslations('Events');
+  const locale = useLocale();
   const [selectedOutcome, setSelectedOutcome] = useState<SelectedOutcome | null>(null);
   const [isSlipOpen, setIsSlipOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>(filterParam || 'all');
   const [searchQuery, setSearchQuery] = useState(searchParam || '');
   const [championships, setChampionships] = useState<string[]>(initialChampionships);
-  const t = useTranslations('Events');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -240,13 +239,15 @@ export default function ClientBookmakingDashboard({
 
   const hasHotEvents = books.some((book) => book.isHotEvent);
   const hasNationalEvents = books.some((book) => book.isNationalSport);
-  const hasChampionships = championships.length > 0;
-  const currentCategoryDisplay = categoryParam ? formatCategoryForDisplay(categoryParam) : 'All Sports';
+  const currentCategoryDisplay = categoryParam ? formatCategoryForDisplay(categoryParam) : t('allSports');
   const hasActiveSearchOrFilter = Boolean(searchQuery || activeFilter !== 'all');
   const isMainPage = !categoryParam;
   const showAccordionView = activeFilter === 'all' && !searchQuery;
 
-  // Helper: sort books with hot events first
+  // Determine if accordions should be open by default (category page with <3 books)
+  const shouldOpenAccordions = !isMainPage && books.length < 3;
+
+  // Helper: sort books with hot first
   const sortBooksByHot = (booksArray: Book[]) => {
     return [...booksArray].sort((a, b) => {
       if (a.isHotEvent && !b.isHotEvent) return -1;
@@ -255,17 +256,24 @@ export default function ClientBookmakingDashboard({
     });
   };
 
-  // Build grouped data for accordions
+  // Filter books by active filter
+  const filteredBooks = (() => {
+    if (activeFilter === 'all') return books;
+    if (activeFilter === 'hot') return books.filter((b) => b.isHotEvent);
+    if (activeFilter === 'national') return books.filter((b) => b.isNationalSport);
+    return books.filter((b) => b.championship === activeFilter);
+  })();
+
+  // Build grouped data for accordions based on filtered books
   const getGroupedData = () => {
     if (isMainPage) {
       // Main page: group by category
       const groupedByCategory: Record<string, Book[]> = {};
-      books.forEach((book) => {
+      filteredBooks.forEach((book) => {
         const cat = book.category.toLowerCase();
         if (!groupedByCategory[cat]) groupedByCategory[cat] = [];
         groupedByCategory[cat].push(book);
       });
-      // Sort categories according to CATEGORY_ORDER
       const sortedCategories = CATEGORY_ORDER.filter((cat) => groupedByCategory[cat]);
       const result = sortedCategories.map((cat) => ({
         category: cat,
@@ -276,7 +284,7 @@ export default function ClientBookmakingDashboard({
       // Category page: group by championship
       const withChampionship: Record<string, Book[]> = {};
       const withoutChampionship: Book[] = [];
-      books.forEach((book) => {
+      filteredBooks.forEach((book) => {
         if (book.championship) {
           if (!withChampionship[book.championship]) withChampionship[book.championship] = [];
           withChampionship[book.championship].push(book);
@@ -284,7 +292,7 @@ export default function ClientBookmakingDashboard({
           withoutChampionship.push(book);
         }
       });
-      // Determine which championships have hot events
+      // Determine hot championships
       const championshipHasHot = Object.entries(withChampionship).reduce(
         (acc, [champ, champBooks]) => {
           acc[champ] = champBooks.some((b) => b.isHotEvent);
@@ -292,7 +300,6 @@ export default function ClientBookmakingDashboard({
         },
         {} as Record<string, boolean>
       );
-      // Sort championships: hot first, then alphabetically
       const sortedChampionships = Object.keys(withChampionship).sort((a, b) => {
         if (championshipHasHot[a] && !championshipHasHot[b]) return -1;
         if (!championshipHasHot[a] && championshipHasHot[b]) return 1;
@@ -313,6 +320,9 @@ export default function ClientBookmakingDashboard({
 
   const groupedData = showAccordionView ? getGroupedData() : null;
 
+  // Fire icon fallback
+  const fireIcon = SPORT_ICONS.fire || null;
+
   return (
     <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
       {/* Search Card */}
@@ -322,7 +332,7 @@ export default function ClientBookmakingDashboard({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="text"
-              placeholder="Search events, teams, or championships..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 pr-20"
@@ -334,19 +344,19 @@ export default function ClientBookmakingDashboard({
                 onClick={handleClearSearch}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 text-xs"
               >
-                Clear
+                {t('clear')}
               </Button>
             )}
           </div>
           {searchQuery && (
             <p className="text-sm text-muted-foreground mt-2">
-              Searching for: &quot;<span className="font-medium">{searchQuery}</span>&quot;
+              {t('searchingFor')} &quot;<span className="font-medium">{searchQuery}</span>&quot;
             </p>
           )}
         </CardContent>
       </Card>
 
-      {/* Circular Category Quick Links + All Sports Button */}
+      {/* Circular Quick Links: All Sports, National, then categories */}
       {initialCategories.length > 0 && (
         <div className="my-4">
           {/* Desktop */}
@@ -362,9 +372,30 @@ export default function ClientBookmakingDashboard({
                   className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
                 >
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
-                    <Flame className="h-8 w-8 text-orange-500" />
+                    {fireIcon ? (
+                      <Image
+                        src={fireIcon}
+                        alt={t('allSports')}
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <Flame className="h-8 w-8 text-orange-500" />
+                    )}
                   </div>
-                  <span className="text-xs sm:text-sm font-medium text-center">All Sports</span>
+                  <span className="text-xs sm:text-sm font-medium text-center">{t('allSports')}</span>
+                </Link>
+
+                {/* National Button */}
+                <Link
+                  href="/book?filter=national"
+                  className="flex flex-col items-center gap-1 min-w-[72px] snap-start group"
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-105">
+                    <Globe className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium text-center">{t('national')}</span>
                 </Link>
 
                 {/* Category Circles */}
@@ -392,9 +423,7 @@ export default function ClientBookmakingDashboard({
                           <Trophy className="h-8 w-8 text-white" />
                         )}
                       </div>
-                      <span className="text-xs sm:text-sm font-medium text-center">
-                        {displayName}
-                      </span>
+                      <span className="text-xs sm:text-sm font-medium text-center">{displayName}</span>
                     </Link>
                   );
                 })}
@@ -428,9 +457,30 @@ export default function ClientBookmakingDashboard({
                 className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
               >
                 <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
-                  <Flame className="h-6 w-6 text-orange-500" />
+                  {fireIcon ? (
+                    <Image
+                      src={fireIcon}
+                      alt={t('allSports')}
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
+                  ) : (
+                    <Flame className="h-6 w-6 text-orange-500" />
+                  )}
                 </div>
-                <span className="text-xs font-medium text-center">All Sports</span>
+                <span className="text-xs font-medium text-center">{t('allSports')}</span>
+              </Link>
+
+              {/* National Button */}
+              <Link
+                href="/book?filter=national"
+                className="flex flex-col items-center gap-1 min-w-[64px] snap-start group"
+              >
+                <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                  <Globe className="h-6 w-6 text-blue-500" />
+                </div>
+                <span className="text-xs font-medium text-center">{t('national')}</span>
               </Link>
 
               {/* Category Circles */}
@@ -467,156 +517,68 @@ export default function ClientBookmakingDashboard({
         </div>
       )}
 
-      {/* Existing Category Filter Buttons (optional) */}
-      {categories.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <span className="font-medium text-sm sm:text-base">{t('categories')}:</span>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/book">
-                  <Button
-                    variant={!categoryParam ? 'default' : 'outline'}
-                    size="sm"
-                    className="text-xs sm:text-sm"
-                  >
-                    {t('allEvents')}
-                  </Button>
-                </Link>
-                {categories.map((category) => (
-                  <Link key={category} href={`/book/category/${formatCategoryForURL(category)}`}>
-                    <Button
-                      variant={
-                        categoryParam && categoryParam.toLowerCase() === category.toLowerCase()
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      className="text-xs sm:text-sm"
-                    >
-                      {formatCategoryForDisplay(category)}
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Simple Filters Row (replaces old filter cards) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={activeFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleFilterChange('all')}
+          className="text-xs sm:text-sm"
+        >
+          {t('allMatches')}
+        </Button>
+        {hasHotEvents && (
+          <Button
+            variant={activeFilter === 'hot' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleFilterChange('hot')}
+            className="text-xs sm:text-sm"
+          >
+            <Flame className="h-3 w-3 mr-1" />
+            {t('hotMatches')}
+          </Button>
+        )}
+        {hasNationalEvents && (
+          <Button
+            variant={activeFilter === 'national' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleFilterChange('national')}
+            className="text-xs sm:text-sm"
+          >
+            <Globe className="h-3 w-3 mr-1" />
+            {t('nationalSports')}
+          </Button>
+        )}
+      </div>
+
+      {/* Active filters indicator */}
+      {hasActiveSearchOrFilter && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">{t('currentlyViewing')}</span>
+          {searchQuery && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Search className="h-3 w-3" />
+              {searchQuery}
+            </Badge>
+          )}
+          {activeFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              {activeFilter === 'hot' && <Flame className="h-3 w-3" />}
+              {activeFilter === 'national' && <Globe className="h-3 w-3" />}
+              {activeFilter !== 'hot' && activeFilter !== 'national' && <Trophy className="h-3 w-3" />}
+              {activeFilter === 'hot' ? t('hotMatches') : activeFilter === 'national' ? t('nationalSports') : activeFilter}
+            </Badge>
+          )}
+          <span className="text-muted-foreground">{t('in')}</span>
+          <Badge variant="outline">{currentCategoryDisplay}</Badge>
+          <Button variant="ghost" size="sm" onClick={handleClearSearch} className="h-6 text-xs">
+            {t('clearAll')}
+          </Button>
+        </div>
       )}
 
-      {/* Filters Card */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm sm:text-base">
-                {currentCategoryDisplay} Filters:
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={activeFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleFilterChange('all')}
-                className="text-xs sm:text-sm"
-              >
-                <Zap className="h-3 w-3 mr-1" />
-                All Matches
-              </Button>
-
-              {hasHotEvents && (
-                <Button
-                  variant={activeFilter === 'hot' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleFilterChange('hot')}
-                  className="text-xs sm:text-sm"
-                >
-                  <Flame className="h-3 w-3 mr-1" />
-                  Hot Matches
-                </Button>
-              )}
-
-              {hasNationalEvents && (
-                <Button
-                  variant={activeFilter === 'national' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleFilterChange('national')}
-                  className="text-xs sm:text-sm"
-                >
-                  <Globe className="h-3 w-3 mr-1" />
-                  National Sports
-                </Button>
-              )}
-
-              {hasChampionships &&
-                championships.map((championship) => (
-                  <Button
-                    key={championship}
-                    variant={activeFilter === championship ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleFilterChange(championship)}
-                    className="text-xs sm:text-sm"
-                  >
-                    <Trophy className="h-3 w-3 mr-1" />
-                    {championship}
-                  </Button>
-                ))}
-            </div>
-          </div>
-
-          {hasActiveSearchOrFilter && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Currently viewing:</span>
-
-                {searchQuery && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Search className="h-3 w-3" />
-                    Search: &quot;{searchQuery}&quot;
-                  </Badge>
-                )}
-
-                {activeFilter !== 'all' && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {activeFilter === 'hot' ? (
-                      <>
-                        <Flame className="h-3 w-3" />
-                        Hot Matches
-                      </>
-                    ) : activeFilter === 'national' ? (
-                      <>
-                        <Globe className="h-3 w-3" />
-                        National Sports
-                      </>
-                    ) : (
-                      <>
-                        <Trophy className="h-3 w-3" />
-                        {activeFilter}
-                      </>
-                    )}
-                  </Badge>
-                )}
-
-                <span className="text-muted-foreground">in</span>
-                <Badge variant="outline">{currentCategoryDisplay}</Badge>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearSearch}
-                  className="h-6 text-xs ml-2"
-                >
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Books List */}
-      {books.length === 0 ? (
+      {filteredBooks.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
           filter={activeFilter}
@@ -625,18 +587,6 @@ export default function ClientBookmakingDashboard({
         />
       ) : (
         <>
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              Showing {books.length} of {pagination.totalCount} matches
-              {searchQuery && ` for "${searchQuery}"`}
-            </p>
-            {hasActiveSearchOrFilter && (
-              <Button variant="outline" size="sm" onClick={handleClearSearch} className="text-xs">
-                Clear Filters
-              </Button>
-            )}
-          </div>
-
           {showAccordionView && groupedData ? (
             <div className="space-y-4">
               {groupedData.type === 'main' ? (
@@ -645,7 +595,13 @@ export default function ClientBookmakingDashboard({
                   const icon = categoryIconMap[category];
                   const displayName = formatCategoryForDisplay(category);
                   return (
-                    <Accordion key={category} type="single" collapsible className="border rounded-lg overflow-hidden">
+                    <Accordion
+                      key={category}
+                      type="single"
+                      collapsible
+                      defaultValue={shouldOpenAccordions ? category : undefined}
+                      className="border rounded-lg overflow-hidden"
+                    >
                       <AccordionItem value={category} className="border-none">
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
                           <div className="flex items-center gap-3">
@@ -687,7 +643,13 @@ export default function ClientBookmakingDashboard({
                 // Category page: Championship accordions + books without championship
                 <>
                   {groupedData.data.championships.map(({ name, books }) => (
-                    <Accordion key={name} type="single" collapsible className="border rounded-lg overflow-hidden">
+                    <Accordion
+                      key={name}
+                      type="single"
+                      collapsible
+                      defaultValue={shouldOpenAccordions ? name : undefined}
+                      className="border rounded-lg overflow-hidden"
+                    >
                       <AccordionItem value={name} className="border-none">
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
                           <div className="flex items-center gap-3">
@@ -720,7 +682,7 @@ export default function ClientBookmakingDashboard({
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <Trophy className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-medium text-sm text-muted-foreground">Other Events</h3>
+                        <h3 className="font-medium text-sm text-muted-foreground">{t('otherEvents')}</h3>
                       </div>
                       {groupedData.data.noChampionshipBooks.map((book) => (
                         <BookCard
@@ -741,7 +703,7 @@ export default function ClientBookmakingDashboard({
           ) : (
             // Flat list when filters/search are active
             <div className="space-y-4">
-              {books.map((book) => (
+              {filteredBooks.map((book) => (
                 <BookCard
                   key={book.id}
                   book={book}
@@ -774,6 +736,7 @@ export default function ClientBookmakingDashboard({
   );
 }
 
+// ---------- BookCard Component ----------
 function BookCard({
   book,
   onOutcomeClick,
@@ -1039,6 +1002,7 @@ function BookCard({
   );
 }
 
+// ---------- NoBooksCard Component ----------
 function NoBooksCard({
   category,
   filter,
@@ -1056,20 +1020,17 @@ function NoBooksCard({
   let description = t('noBooksAvailableDescription');
 
   if (searchQuery) {
-    message = 'No matches found';
-    description = `No matches found for "${searchQuery}". Try adjusting your search terms or filters.`;
+    message = t('noBooksAvailable');
+    description = `${t('noBooksAvailableDescription')} "${searchQuery}".`;
   } else if (category) {
     message = t('noBooksInCategory', { category });
     description = t('noBooksInCategoryDescription');
   } else if (filter === 'hot') {
-    message = 'No Hot Matches Available';
-    description = 'There are currently no hot matches. Check back later for exciting events!';
+    message = t('noBooksAvailable');
+    description = t('noBooksAvailableDescription');
   } else if (filter === 'national') {
-    message = 'No National Sports Events Available';
-    description = 'There are currently no national sports events. Check back later for national competitions!';
-  } else if (filter && filter !== 'all') {
-    message = `No Matches in ${filter}`;
-    description = `There are currently no matches in the ${filter} championship.`;
+    message = t('noBooksAvailable');
+    description = t('noBooksAvailableDescription');
   }
 
   return (
@@ -1087,7 +1048,7 @@ function NoBooksCard({
           {hasActiveSearchOrFilter && (
             <Link href="/book">
               <Button variant="default" size="sm" className="w-full sm:w-auto">
-                Clear Filters
+                {t('clearAll')}
               </Button>
             </Link>
           )}
@@ -1097,6 +1058,7 @@ function NoBooksCard({
   );
 }
 
+// ---------- ShadcnPagination Component ----------
 function ShadcnPagination({
   pagination,
   onPageChange,
@@ -1104,7 +1066,7 @@ function ShadcnPagination({
   pagination: PaginationInfo;
   onPageChange: (page: number) => void;
 }) {
-  const t = useTranslations('Common');
+  const t = useTranslations('Events');
   const { currentPage, totalPages } = pagination;
 
   const getPageNumbers = (): (number | string)[] => {
