@@ -46,11 +46,12 @@ const Banners = () => {
                   <div className="md:p-0.5">
                     <Link href={banner.href} className="block" prefetch={false}>
                       <div className="relative w-full aspect-[5/2] md:rounded-md overflow-hidden">
-                        <img
+                        <Image
                           src={BANNER_IMAGES[imageKey] || BANNER_IMAGES[fallbackKey]}
                           alt={`Banner ${banner.number}`}
-                          // fill
+                          fill
                           className="object-cover"
+                          unoptimized
                           sizes="(max-width: 768px) 80vw, (max-width: 1024px) 50vw, 33vw"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
