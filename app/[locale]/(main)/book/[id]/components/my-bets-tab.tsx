@@ -138,7 +138,7 @@ export default function MyBetsTab({ initialBets, bookId }: MyBetsTabProps) {
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-      timeZone: 'UTC',
+      timeZone: 'Asia/Kolkata',
       month: 'short',
       day: '2-digit',
       hour: '2-digit',

@@ -24,7 +24,7 @@ export default function BookHeader({ book }: BookHeaderProps) {
   const capitalizedStatus = bookStatus.charAt(0).toUpperCase() + bookStatus.slice(1).toLowerCase()
 
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-    timeZone: 'UTC',
+    timeZone: 'Asia/Kolkata',
     year: 'numeric',
     month: 'long',
     day: '2-digit',

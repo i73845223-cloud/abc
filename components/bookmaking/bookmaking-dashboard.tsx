@@ -328,36 +328,17 @@ export default function ClientBookmakingDashboard({
   const nationalIcon = SPORT_ICONS.india;
 
   return (
-    <div className="container mx-auto px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10 pr-20"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearSearch}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 text-xs"
-              >
-                {t('clear')}
-              </Button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {t('searchingFor')} &quot;<span className="font-medium">{searchQuery}</span>&quot;
-            </p>
-          )}
-        </CardContent>
-      </Card>
+    <div className="container mx-auto px-1 px:px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          type="text"
+          placeholder={t('searchPlaceholder')}
+          value={searchQuery}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="pl-8 pr-2"
+        />
+      </div>
 
       {initialCategories.length > 0 && (
         <div className="mt-3 mb-1 sm:mt-6 sm:mb-3 px-1">
@@ -625,7 +606,7 @@ export default function ClientBookmakingDashboard({
                       type="single"
                       collapsible
                       defaultValue={books.length < 5 ? category : undefined}
-                      className="border rounded-lg overflow-hidden"
+                      className="border rounded-xl overflow-hidden"
                     >
                       <AccordionItem value={category} className="border-none">
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
@@ -645,7 +626,7 @@ export default function ClientBookmakingDashboard({
                             </Badge>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 pt-2 pb-4">
+                        <AccordionContent className='pb-0'>
                           <div className="space-y-3">
                             {books.map((book) => (
                               <BookCard
@@ -672,7 +653,7 @@ export default function ClientBookmakingDashboard({
                       type="single"
                       collapsible
                       defaultValue={books.length < 5 ? name : undefined}
-                      className="border rounded-lg overflow-hidden"
+                      className="border rounded-xl overflow-hidden"
                     >
                       <AccordionItem value={name} className="border-none">
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
@@ -684,7 +665,7 @@ export default function ClientBookmakingDashboard({
                             </Badge>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 pt-2 pb-4">
+                        <AccordionContent className="pb-0">
                           <div className="space-y-3">
                             {books.map((book) => (
                               <BookCard
@@ -789,7 +770,7 @@ function BookCard({
   const displayCategory = book.category.charAt(0).toUpperCase() + book.category.slice(1).toLowerCase();
 
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-    timeZone: 'UTC',
+    timeZone: 'Asia/Kolkata',
     year: 'numeric',
     month: 'long',
     day: '2-digit',
@@ -886,23 +867,23 @@ function BookCard({
 
   return (
     <Card className="p-4 sm:p-6 hover:shadow-md transition-shadow bg-card border-border relative">
-      {book.isHotEvent && (
+      {/* {book.isHotEvent && (
         <div className="absolute -top-2 -left-2 z-10">
           <Badge className="bg-orange-500 text-white flex items-center gap-1">
             <Flame className="h-3 w-3" />
             Hot
           </Badge>
         </div>
-      )}
+      )} */}
 
-      {book.isNationalSport && (
+      {/* {book.isNationalSport && (
         <div className="absolute -top-2 -right-2 z-10">
           <Badge className="bg-blue-500 text-white flex items-center gap-1">
             <Globe className="h-3 w-3" />
             National
           </Badge>
         </div>
-      )}
+      )} */}
 
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
