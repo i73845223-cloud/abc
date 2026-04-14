@@ -61,7 +61,7 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
         return;
       }
 
-      router.push(callbackUrl || "/dashboard");
+      router.push(callbackUrl || "/");
       router.refresh();
     });
   };

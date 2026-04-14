@@ -76,7 +76,7 @@ export const LoginForm = ({ refCode, callbackUrl: propCallbackUrl }: LoginFormPr
 
     return (
         <CardWrapper
-            headerLabel="Welcome back"
+            headerLabel="Log In"
             backButtonLabel="Don't have an account?"
             backButtonHref={registerHref}
         >
