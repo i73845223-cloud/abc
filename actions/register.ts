@@ -1,41 +1,40 @@
-"use server"
+"use server";
 
-import { db } from '@/lib/db';
-import * as z from 'zod'
-import bcrypt from 'bcryptjs'
+import { db } from "@/lib/db";
+import * as z from "zod";
+import bcrypt from "bcryptjs";
 
-import { RegisterSchema } from '@/schemas';
-import { getUserByEmail } from '@/data/user';
-import { generateVerificationToken } from '@/lib/tokens';
-import { sendVerificationEmail } from '@/lib/mail';
-import { createBonusFromPromoCode } from '@/lib/bonus-utils';
+import { RegisterSchema } from "@/schemas";
+import { getUserByEmail } from "@/data/user";
+import { createBonusFromPromoCode } from "@/lib/bonus-utils";
 
 export const register = async (
   values: z.infer<typeof RegisterSchema>,
   ref?: string | null
 ) => {
-  const validatedFields = RegisterSchema.safeParse(values)
+  const validatedFields = RegisterSchema.safeParse(values);
 
   if (!validatedFields.success) {
-    return { error: 'Invalid fields!' }
+    return { error: "Invalid fields!" };
   }
 
-  const { email, password, name } = validatedFields.data
-  const hashedPassword = await bcrypt.hash(password, 10)
+  const { email, password } = validatedFields.data;
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  const existingUser = await getUserByEmail(email)
+  const existingUser = await getUserByEmail(email);
 
   if (existingUser) {
-    return { error: 'Email already in use' }
+    return { error: "Email already in use" };
   }
 
   const user = await db.user.create({
     data: {
-      name,
       email,
       password: hashedPassword,
+      name: email.split("@")[0],
+      emailVerified: new Date(),
     },
-  })
+  });
 
   if (ref) {
     const promoCode = await db.promoCode.findFirst({
@@ -48,11 +47,11 @@ export const register = async (
           { endDate: { gte: new Date() } }
         ],
       },
-    })
+    });
 
     if (promoCode) {
       if (promoCode.maxUses && promoCode.currentUses >= promoCode.maxUses) {
-        console.warn("Promo code max uses reached")
+        console.warn("Promo code max uses reached");
       } else {
         await db.userPromoCode.create({
           data: {
@@ -61,12 +60,12 @@ export const register = async (
             timesUsed: 1,
             lastUsedAt: new Date(),
           },
-        })
+        });
 
         await db.promoCode.update({
           where: { id: promoCode.id },
           data: { currentUses: { increment: 1 } },
-        })
+        });
 
         await createBonusFromPromoCode({
           userId: user.id,
@@ -79,16 +78,10 @@ export const register = async (
           freeSpinsCount: promoCode.freeSpinsCount,
           freeSpinsGame: promoCode.freeSpinsGame,
           cashbackPercentage: promoCode.cashbackPercentage,
-        })
+        });
       }
     }
   }
 
-  const verificationToken = await generateVerificationToken(email)
-  await sendVerificationEmail(
-    verificationToken.email,
-    verificationToken.token,
-  )
-
-  return { success: 'Confirmation email sent!' }
-}
+  return { success: "Account created! Redirecting..." };
+};
