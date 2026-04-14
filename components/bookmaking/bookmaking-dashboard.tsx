@@ -66,7 +66,7 @@ interface PaginationInfo {
 
 interface ClientBookmakingDashboardProps {
   initialBooks: Book[];
-  initialPagination: PaginationInfo;
+  // initialPagination: PaginationInfo;
   initialCategories: string[];
   initialChampionships: string[];
   categoryParam?: string;
@@ -110,7 +110,7 @@ const categoryIconMap: Record<string, string> = {
 
 export default function ClientBookmakingDashboard({
   initialBooks,
-  initialPagination,
+  // initialPagination,
   initialCategories,
   initialChampionships,
   categoryParam,
@@ -243,12 +243,12 @@ export default function ClientBookmakingDashboard({
 
   const books = initialBooks || [];
   const categories = initialCategories || [];
-  const pagination = initialPagination || {
-    currentPage: 1,
-    totalPages: 0,
-    hasNext: false,
-    hasPrev: false,
-  };
+  // const pagination = initialPagination || {
+  //   currentPage: 1,
+  //   totalPages: 0,
+  //   hasNext: false,
+  //   hasPrev: false,
+  // };
 
   const hasHotEvents = books.some((book) => book.isHotEvent);
   const hasNationalEvents = books.some((book) => book.isNationalSport);
@@ -721,9 +721,9 @@ export default function ClientBookmakingDashboard({
             </div>
           )}
 
-          {pagination.totalPages > 1 && (
+          {/* {pagination.totalPages > 1 && (
             <ShadcnPagination pagination={pagination} onPageChange={handlePageChange} />
-          )}
+          )} */}
         </>
       )}
 

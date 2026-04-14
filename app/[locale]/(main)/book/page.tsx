@@ -2,29 +2,25 @@ import ClientBookmakingDashboard from '@/components/bookmaking/bookmaking-dashbo
 import { db } from '@/lib/db'
 import { currentUser } from '@/lib/auth'
 import { Book, Event, Outcome, Team } from '@/app/types/bookmaking'
+import { Suspense } from 'react'
+import DashboardSkeleton from '@/components/bookmaking/dashboard-skeleton'
 
 function convertBookStatus(status: any): 'ACTIVE' | 'INACTIVE' | 'COMPLETED' {
   const statusMap: { [key: string]: 'ACTIVE' | 'INACTIVE' | 'COMPLETED' } = {
     'ACTIVE': 'ACTIVE',
-    'INACTIVE': 'INACTIVE', 
+    'INACTIVE': 'INACTIVE',
     'COMPLETED': 'COMPLETED',
     'SETTLED': 'COMPLETED'
   }
-  
   return statusMap[status] || 'INACTIVE'
 }
 
-async function getBooksData(category?: string, filter?: string, search?: string, page: number = 1, limit: number = 10) {
+async function getBooksData(category?: string, filter?: string, search?: string) {
   try {
-    const skip = (page - 1) * limit
-
     const whereCondition: any = { status: 'ACTIVE' }
-    
+
     if (category && category !== 'all') {
-      whereCondition.category = {
-        equals: category,
-        mode: 'insensitive'
-      }
+      whereCondition.category = { equals: category, mode: 'insensitive' }
     }
 
     if (filter === 'hot') {
@@ -32,52 +28,29 @@ async function getBooksData(category?: string, filter?: string, search?: string,
     } else if (filter === 'national') {
       whereCondition.isNationalSport = true
     } else if (filter && filter !== 'all') {
-      whereCondition.championship = {
-        equals: filter,
-        mode: 'insensitive'
-      }
+      whereCondition.championship = { equals: filter, mode: 'insensitive' }
     }
 
     if (search && search.trim() !== '') {
       whereCondition.OR = [
-        {
-          title: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          description: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
         {
           teams: {
             some: {
-              name: {
-                contains: search,
-                mode: 'insensitive'
-              }
+              name: { contains: search, mode: 'insensitive' }
             }
           }
         },
         {
           events: {
             some: {
-              name: {
-                contains: search,
-                mode: 'insensitive'
-              }
+              name: { contains: search, mode: 'insensitive' }
             }
           }
         }
       ]
     }
-
-    const totalCount = await db.book.count({
-      where: whereCondition
-    })
 
     const books = await db.book.findMany({
       where: whereCondition,
@@ -88,13 +61,8 @@ async function getBooksData(category?: string, filter?: string, search?: string,
             homeTeam: true,
             awayTeam: true,
             outcomes: {
-              where: {
-                result: 'PENDING'
-              },
-              orderBy: [
-                { order: 'asc' },
-                { createdAt: 'asc' }
-              ]
+              where: { result: 'PENDING' },
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }]
             }
           },
           orderBy: [
@@ -107,19 +75,16 @@ async function getBooksData(category?: string, filter?: string, search?: string,
       orderBy: [
         { isHotEvent: 'desc' },
         { date: 'asc' }
-      ],
-      skip,
-      take: limit
+      ]
     })
 
+    const now = new Date()
     const serializedBooks: Book[] = books.map(book => {
-      const now = new Date()
       const bookDate = new Date(book.date)
-      
       const convertedStatus = convertBookStatus(book.status)
       const isLive = convertedStatus === 'ACTIVE' && now >= bookDate
       const isUpcoming = convertedStatus === 'ACTIVE' && now < bookDate
-      
+
       const serializedBook = {
         ...book,
         status: convertedStatus,
@@ -129,7 +94,7 @@ async function getBooksData(category?: string, filter?: string, search?: string,
         isLive,
         isUpcoming,
         isAcceptingBets: now < bookDate,
-        displayStatus: convertedStatus === 'ACTIVE' 
+        displayStatus: convertedStatus === 'ACTIVE'
           ? (now >= bookDate ? 'LIVE' : 'UPCOMING')
           : convertedStatus
       } as unknown as Book
@@ -157,7 +122,6 @@ async function getBooksData(category?: string, filter?: string, search?: string,
               updatedAt: event.homeTeam.updatedAt.toISOString()
             } as unknown as Team
           }
-
           if (event.awayTeam) {
             serializedEvent.awayTeam = {
               ...event.awayTeam,
@@ -165,7 +129,6 @@ async function getBooksData(category?: string, filter?: string, search?: string,
               updatedAt: event.awayTeam.updatedAt.toISOString()
             } as unknown as Team
           }
-
           if (event.outcomes) {
             serializedEvent.outcomes = event.outcomes.map(outcome => ({
               ...outcome,
@@ -173,36 +136,16 @@ async function getBooksData(category?: string, filter?: string, search?: string,
               updatedAt: outcome.updatedAt.toISOString()
             } as unknown as Outcome))
           }
-
           return serializedEvent
         })
       }
-
       return serializedBook
     })
 
-    return {
-      books: serializedBooks,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalCount / limit),
-        totalCount,
-        hasNext: page < Math.ceil(totalCount / limit),
-        hasPrev: page > 1
-      }
-    }
+    return serializedBooks
   } catch (error) {
     console.error('Error fetching books:', error)
-    return { 
-      books: [], 
-      pagination: { 
-        currentPage: 1, 
-        totalPages: 0, 
-        totalCount: 0, 
-        hasNext: false, 
-        hasPrev: false 
-      } 
-    }
+    return []
   }
 }
 
@@ -215,7 +158,6 @@ async function getCategoriesData() {
       where: { status: 'ACTIVE' },
       select: { category: true }
     })
-
     const categories = Array.from(new Set(allBooks.map(book => book.category))).filter(Boolean)
     return categories
   } catch (error) {
@@ -229,30 +171,19 @@ async function getChampionshipsData(category?: string) {
     const user = await currentUser()
     if (!user?.id) return []
 
-    const whereCondition: any = { 
+    const whereCondition: any = {
       status: 'ACTIVE',
       championship: { not: null }
     }
-
     if (category && category !== 'all') {
-      whereCondition.category = {
-        equals: category,
-        mode: 'insensitive'
-      }
+      whereCondition.category = { equals: category, mode: 'insensitive' }
     }
 
     const allBooks = await db.book.findMany({
       where: whereCondition,
-      select: { 
-        championship: true,
-        category: true 
-      }
+      select: { championship: true }
     })
-
-    const championships = Array.from(new Set(
-      allBooks.map(book => book.championship)
-    )).filter(Boolean) as string[]
-
+    const championships = Array.from(new Set(allBooks.map(book => book.championship))).filter(Boolean) as string[]
     return championships
   } catch (error) {
     console.error('Error fetching championships:', error)
@@ -266,27 +197,26 @@ interface PageProps {
 }
 
 export default async function BookmakingDashboard({ searchParams, params }: PageProps) {
-  const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1
   const filter = typeof searchParams.filter === 'string' ? searchParams.filter : undefined
   const search = typeof searchParams.search === 'string' ? searchParams.search : undefined
-  
   const categoryParam = params.category || (typeof searchParams.category === 'string' ? searchParams.category : undefined)
-  
+
   const [booksData, categories, championships] = await Promise.all([
-    getBooksData(categoryParam, filter, search, page, 10),
+    getBooksData(categoryParam, filter, search),
     getCategoriesData(),
     getChampionshipsData(categoryParam)
   ])
 
   return (
-    <ClientBookmakingDashboard
-      initialBooks={booksData.books}
-      initialPagination={booksData.pagination}
-      initialCategories={categories}
-      initialChampionships={championships}
-      categoryParam={categoryParam}
-      filterParam={filter}
-      searchParam={search}
-    />
+    <Suspense fallback={<DashboardSkeleton />}>
+      <ClientBookmakingDashboard
+        initialBooks={booksData}
+        initialCategories={categories}
+        initialChampionships={championships}
+        categoryParam={categoryParam}
+        filterParam={filter}
+        searchParam={search}
+      />
+    </Suspense>
   )
 }
