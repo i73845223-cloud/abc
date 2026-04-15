@@ -148,7 +148,7 @@ export default function MyBetsTab({ initialBets, bookId }: MyBetsTabProps) {
   }
 
   return (
-    <Card>
+    <Card className='bg-black'>
       <CardHeader>
         <CardTitle>{t('myBets')}</CardTitle>
         <CardDescription>

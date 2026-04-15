@@ -22,6 +22,15 @@ export default function BookHeader({ book }: BookHeaderProps) {
 
   const bookStatus = book.displayStatus || (book.isLive ? 'LIVE' : 'UPCOMING')
   const capitalizedStatus = bookStatus.charAt(0).toUpperCase() + bookStatus.slice(1).toLowerCase()
+  
+  const sportName = book.category?.charAt(0).toUpperCase() + book.category?.slice(1).toLowerCase() || ''
+  const mainTeams = book.teams?.slice(0, 2) || []
+  const mainDisplayText = book.championship 
+    ? book.championship 
+    : mainTeams.length >= 2 
+      ? `${mainTeams[0].name} vs ${mainTeams[1].name}`
+      : book.title
+
 
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -45,15 +54,12 @@ export default function BookHeader({ book }: BookHeaderProps) {
       </div>
 
       <Card>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-4 sm:p-6 bg-black">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-2">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words">
-              {book.title}
+              {sportName}. {mainDisplayText}
             </h1>
             <div className="flex flex-wrap gap-1 sm:gap-2 justify-start sm:justify-end">
-              <Badge variant="secondary" className="text-xs sm:text-sm">
-                {book.category}
-              </Badge>
               <Badge variant={
                 book.isLive ? 'default' : 
                 book.isUpcoming ? 'secondary' : 'outline'

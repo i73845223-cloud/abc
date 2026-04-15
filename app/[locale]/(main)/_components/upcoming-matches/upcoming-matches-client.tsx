@@ -113,36 +113,68 @@ interface MatchCardProps {
 
 function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
   const t = useTranslations('Home')
+  const router = useRouter()
   const mainTeams = book.teams?.slice(0, 2) || []
   const firstEvent = book.events?.[0]
-  const displayCategory = book.category?.charAt(0).toUpperCase() + book.category?.slice(1).toLowerCase() || ''
+  const sportName = book.category?.charAt(0).toUpperCase() + book.category?.slice(1).toLowerCase() || ''
   const now = new Date()
   const bookDate = new Date(book.date)
   const isAcceptingBets = now < bookDate
 
-  const handleOutcomeClickWrapper = (outcome: Outcome, event: Event, book: Book) => {
-    if (!isUserLoggedIn) {
-      return
-    }
+  const mainDisplayText = book.championship 
+    ? book.championship 
+    : mainTeams.length >= 2 
+      ? `${mainTeams[0].name} vs ${mainTeams[1].name}`
+      : book.title
+
+  const handleOutcomeClickWrapper = (e: React.MouseEvent, outcome: Outcome, event: Event, book: Book) => {
+    e.stopPropagation()
+    if (!isUserLoggedIn) return
     onOutcomeClick(outcome, event, book)
   }
 
+  const handleCardClick = () => {
+    router.push(`/book/${book.id}`)
+  }
+
+  const getOutcomeLabel = (outcome: Outcome, index: number, total: number): string => {
+    if (total === 3) {
+      if (index === 0) return '1'
+      if (index === 1) return 'X'
+      return '2'
+    }
+    if (total === 2) {
+      if (index === 0) return '1'
+      return '2'
+    }
+
+    const name = outcome.name.trim()
+    if (name.toLowerCase().includes('home') || name.toLowerCase().includes('team 1')) return '1'
+    if (name.toLowerCase().includes('away') || name.toLowerCase().includes('team 2')) return '2'
+    if (name.toLowerCase().includes('draw') || name.toLowerCase().includes('tie')) return 'X'
+    return name.length > 3 ? name.slice(0, 3) : name
+  }
+
+  const outcomes = firstEvent?.outcomes || []
+  const gridCols = outcomes.length === 2 ? 'grid-cols-2' : outcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1'
+
   return (
     <div className="h-full">
-      <div className="h-full hover:shadow-md transition-all duration-200 hover:border-primary/50 cursor-pointer bg-card border-border group mx-1 rounded-lg border">
-        <div className="p-4 h-full flex flex-col">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex gap-2 min-w-0">
-              <h3 className="font-semibold text-sm truncate text-foreground mb-1 group-hover:text-primary transition-colors">
-                {book.title}
-              </h3>
-              <Badge variant="secondary" className="text-xs bg-muted px-2 py-0">
-                {displayCategory}
-              </Badge>
-            </div>
+      <div 
+        className="h-full hover:shadow-md transition-all duration-200 hover:border-primary/50 cursor-pointer border-border group mx-1 rounded-lg border"
+        onClick={handleCardClick}
+      >
+        <div className="h-full flex flex-col pt-2">
+          <div className="pb-1 mb-3 border-b border-border px-4">
+            <span className="text-xs font-medium text-muted-foreground truncate block">
+              {sportName}. {mainDisplayText}
+            </span>
+            <span>
+              
+            </span>
           </div>
 
-          <div className="space-y-2 mb-3 flex-1">
+          <div className="space-y-2 mb-3 flex-1 px-4">
             {mainTeams.map((team) => (
               <div key={team.id} className="flex items-center gap-2">
                 {team.image && (
@@ -164,7 +196,7 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
             )}
           </div>
 
-          <div className="text-xs text-muted-foreground mb-3">
+          <div className="text-xs text-muted-foreground mb-2 px-4">
             {bookDate.toLocaleString('en-IN', {
               timeZone: 'Asia/Kolkata',
               month: 'short',
@@ -175,65 +207,50 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
             })}
           </div>
 
-          {firstEvent && firstEvent.outcomes && firstEvent.outcomes.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground truncate">
+          {outcomes.length > 0 && (
+            <div className='px-2 pb-2'>
+              <div className="text-sm font-medium text-foreground truncate mb-2 text-center">
                 {firstEvent.name}
               </div>
-              <div className="sm:grid grid-cols-2 gap-2 flex flex-col">
-                {firstEvent.outcomes.map((outcome) => (
+              <div className={`grid ${gridCols} gap-2`}>
+                {outcomes.map((outcome, idx) => (
                   <div
                     key={outcome.id}
-                    className={`flex items-center justify-between p-2 bg-background rounded-lg border border-border transition-all duration-200 group/outcome ${
+                    className={`flex flex-col items-center justify-center p-2 min-h-[50px] bg-background rounded-lg border border-border transition-all duration-200 group/outcome ${
                       isAcceptingBets && isUserLoggedIn
                         ? 'cursor-pointer hover:bg-primary/10 hover:border-primary/30' 
                         : isAcceptingBets && !isUserLoggedIn
                         ? 'cursor-pointer hover:bg-primary/10 hover:border-primary/30'
                         : 'cursor-not-allowed opacity-60'
                     }`}
-                    onClick={() => {
-                      if (!isAcceptingBets) return
-                      
-                      if (!isUserLoggedIn) {
-                        onOutcomeClick(outcome, firstEvent, book)
+                    onClick={(e) => {
+                      if (!isAcceptingBets) {
+                        e.stopPropagation()
                         return
                       }
-                      
-                      handleOutcomeClickWrapper(outcome, firstEvent, book)
+                      handleOutcomeClickWrapper(e, outcome, firstEvent, book)
                     }}
                   >
-                    <span className={`text-xs font-medium truncate mr-2 flex-1 ${
+                    <span className={`text-xl font-extrabold text-sky-400 ${
+                      isAcceptingBets ? 'group-hover/outcome:text-sky-300' : ''
+                    }`}>
+                      {outcome.odds.toFixed(2)}
+                    </span>
+                    <span className={`text-[8px] text-center font-medium ${
                       isAcceptingBets ? 'group-hover/outcome:text-primary' : ''
                     }`}>
-                      {outcome.name}
+                      {getOutcomeLabel(outcome, idx, outcomes.length)}
                     </span>
-                    <Badge 
-                      variant="secondary" 
-                      className={`text-xs shrink-0 min-w-12 text-center ${
-                        isAcceptingBets 
-                          ? 'bg-primary/20 group-hover/outcome:bg-primary/30' 
-                          : 'bg-muted'
-                      }`}
-                    >
-                      {outcome.odds.toFixed(2)}
-                    </Badge>
                   </div>
                 ))}
               </div>
               {!isAcceptingBets && (
-                <div className="text-xs text-muted-foreground text-center">
+                <div className="text-xs text-muted-foreground text-center mt-1">
                   {t('betsClosed')}
                 </div>
               )}
             </div>
           )}
-
-          <Link href={`/book/${book.id}`} className="w-full mt-3">
-            <Button size="sm" variant="outline" className="w-full text-xs h-8">
-              {t('viewAllOptions')}
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </Link>
         </div>
       </div>
     </div>

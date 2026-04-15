@@ -274,19 +274,62 @@ export default function ClientBookmakingDashboard({
 
   const getGroupedData = () => {
     if (isMainPage) {
-      const groupedByCategory: Record<string, Book[]> = {};
+      // Main page: group by category, then by championship
+      const groupedByCategory: Record<
+        string,
+        {
+          championships: Record<string, Book[]>;
+          noChampionship: Book[];
+        }
+      > = {};
+
       filteredBooks.forEach((book) => {
         const cat = book.category.toLowerCase();
-        if (!groupedByCategory[cat]) groupedByCategory[cat] = [];
-        groupedByCategory[cat].push(book);
+        if (!groupedByCategory[cat]) {
+          groupedByCategory[cat] = { championships: {}, noChampionship: [] };
+        }
+        if (book.championship) {
+          if (!groupedByCategory[cat].championships[book.championship]) {
+            groupedByCategory[cat].championships[book.championship] = [];
+          }
+          groupedByCategory[cat].championships[book.championship].push(book);
+        } else {
+          groupedByCategory[cat].noChampionship.push(book);
+        }
       });
+
       const sortedCategories = CATEGORY_ORDER.filter((cat) => groupedByCategory[cat]);
-      const result = sortedCategories.map((cat) => ({
-        category: cat,
-        books: sortBooksByHot(groupedByCategory[cat]),
-      }));
+      const result = sortedCategories.map((cat) => {
+        const catData = groupedByCategory[cat];
+
+        // Determine which championships have hot events
+        const championshipHasHot = Object.entries(catData.championships).reduce(
+          (acc, [champ, champBooks]) => {
+            acc[champ] = champBooks.some((b) => b.isHotEvent);
+            return acc;
+          },
+          {} as Record<string, boolean>
+        );
+
+        const sortedChampionships = Object.keys(catData.championships).sort((a, b) => {
+          if (championshipHasHot[a] && !championshipHasHot[b]) return -1;
+          if (!championshipHasHot[a] && championshipHasHot[b]) return 1;
+          return a.localeCompare(b);
+        });
+
+        return {
+          category: cat,
+          championships: sortedChampionships.map((champ) => ({
+            name: champ,
+            books: sortBooksByHot(catData.championships[champ]),
+          })),
+          noChampionshipBooks: sortBooksByHot(catData.noChampionship),
+        };
+      });
+
       return { type: 'main' as const, data: result };
     } else {
+      // Category page: group by championship
       const withChampionship: Record<string, Book[]> = {};
       const withoutChampionship: Book[] = [];
       filteredBooks.forEach((book) => {
@@ -328,7 +371,7 @@ export default function ClientBookmakingDashboard({
   const nationalIcon = SPORT_ICONS.india;
 
   return (
-    <div className="container mx-auto px-1 px:px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0">
+    <div className="container mx-auto px-1 px:px-4 py-6 lg:space-y-6 space-y-3 pb-[70px] lg:pb-0 max-w-[800px]">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
@@ -597,112 +640,192 @@ export default function ClientBookmakingDashboard({
           {showAccordionView && groupedData ? (
             <div className="space-y-4">
               {groupedData.type === 'main' ? (
-                groupedData.data.map(({ category, books }) => {
-                  const icon = categoryIconMap[category];
-                  const displayName = formatCategoryForDisplay(category);
-                  return (
-                    <Accordion
-                      key={category}
-                      type="single"
-                      collapsible
-                      defaultValue={books.length < 5 ? category : undefined}
-                      className="border rounded-xl overflow-hidden"
-                    >
-                      <AccordionItem value={category} className="border-none">
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            {icon && (
-                              <Image
-                                src={icon}
-                                alt={displayName}
-                                width={24}
-                                height={24}
-                                className="object-contain"
-                              />
-                            )}
-                            <span className="font-semibold text-base">{displayName}</span>
-                            <Badge variant="secondary" className="ml-2">
-                              {books.length}
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className='pb-0'>
-                          <div className="space-y-3">
-                            {books.map((book) => (
-                              <BookCard
-                                key={book.id}
-                                book={book}
-                                onOutcomeClick={handleOutcomeClick}
-                                currentCategory={categoryParam}
-                                isUserLoggedIn={!!session}
-                                showChampionshipLink={true}
-                                searchQuery={searchQuery}
-                              />
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                (() => {
+                  const categoriesCount = groupedData.data.length;
+                  const defaultOpenCategories =
+                    categoriesCount <= 2 ? groupedData.data.map((item) => item.category) : [];
+
+                  return groupedData.data.map(
+                    ({ category, championships, noChampionshipBooks }) => {
+                      const icon = categoryIconMap[category];
+                      const displayName = formatCategoryForDisplay(category);
+
+                      const championshipsCount = championships.length;
+                      const defaultOpenChampionships =
+                        championshipsCount <= 2 ? championships.map((c) => c.name) : [];
+
+                      const totalBooks =
+                        championships.reduce((acc, c) => acc + c.books.length, 0) +
+                        noChampionshipBooks.length;
+
+                      return (
+                        <Accordion
+                          key={category}
+                          type="single"
+                          collapsible
+                          defaultValue={
+                            defaultOpenCategories.includes(category) ? category : undefined
+                          }
+                          className="border rounded-xl overflow-hidden"
+                        >
+                          <AccordionItem value={category} className="border-none">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
+                              <div className="flex items-center gap-3">
+                                {icon && (
+                                  <Image
+                                    src={icon}
+                                    alt={displayName}
+                                    width={24}
+                                    height={24}
+                                    className="object-contain"
+                                  />
+                                )}
+                                <span className="font-semibold text-base">{displayName}</span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-0">
+                              <div className="space-y-3 py-2">
+                                {championships.map(({ name, books }) => (
+                                  <Accordion
+                                    key={name}
+                                    type="single"
+                                    collapsible
+                                    defaultValue={
+                                      defaultOpenChampionships.includes(name) ? name : undefined
+                                    }
+                                    className="border rounded-lg overflow-hidden ml-2"
+                                  >
+                                    <AccordionItem value={name} className="border-none">
+                                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-muted/20 hover:bg-muted/40">
+                                        <div className="flex items-center gap-2">
+                                          <Trophy className="h-4 w-4 text-yellow-500" />
+                                          <span className="font-medium text-sm">{name}</span>
+                                          <Badge variant="secondary" className="ml-2 text-xs">
+                                            {books.length}
+                                          </Badge>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pb-0">
+                                        <div className="space-y-2 pt-1">
+                                          {books.map((book) => (
+                                            <BookCard
+                                              key={book.id}
+                                              book={book}
+                                              onOutcomeClick={handleOutcomeClick}
+                                              currentCategory={categoryParam}
+                                              isUserLoggedIn={!!session}
+                                              showChampionshipLink={false}
+                                              searchQuery={searchQuery}
+                                            />
+                                          ))}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  </Accordion>
+                                ))}
+
+                                {noChampionshipBooks.length > 0 && (
+                                  <div className="space-y-2 ml-2">
+                                    <div className="flex items-center gap-2 px-1">
+                                      <Trophy className="h-3 w-3 text-muted-foreground" />
+                                      <h4 className="font-medium text-xs text-muted-foreground">
+                                        {t('otherEvents')}
+                                      </h4>
+                                    </div>
+                                    {noChampionshipBooks.map((book) => (
+                                      <BookCard
+                                        key={book.id}
+                                        book={book}
+                                        onOutcomeClick={handleOutcomeClick}
+                                        currentCategory={categoryParam}
+                                        isUserLoggedIn={!!session}
+                                        showChampionshipLink={false}
+                                        searchQuery={searchQuery}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      );
+                    }
                   );
-                })
+                })()
               ) : (
-                <>
-                  {groupedData.data.championships.map(({ name, books }) => (
-                    <Accordion
-                      key={name}
-                      type="single"
-                      collapsible
-                      defaultValue={books.length < 5 ? name : undefined}
-                      className="border rounded-xl overflow-hidden"
-                    >
-                      <AccordionItem value={name} className="border-none">
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <Trophy className="h-5 w-5 text-yellow-500" />
-                            <span className="font-semibold text-base">{name}</span>
-                            <Badge variant="secondary" className="ml-2">
-                              {books.length}
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-0">
-                          <div className="space-y-3">
-                            {books.map((book) => (
-                              <BookCard
-                                key={book.id}
-                                book={book}
-                                onOutcomeClick={handleOutcomeClick}
-                                currentCategory={categoryParam}
-                                isUserLoggedIn={!!session}
-                                showChampionshipLink={false}
-                                searchQuery={searchQuery}
-                              />
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  ))}
-                  {groupedData.data.noChampionshipBooks.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 px-1">
-                        <Trophy className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-medium text-sm text-muted-foreground">{t('otherEvents')}</h3>
-                      </div>
-                      {groupedData.data.noChampionshipBooks.map((book) => (
-                        <BookCard
-                          key={book.id}
-                          book={book}
-                          onOutcomeClick={handleOutcomeClick}
-                          currentCategory={categoryParam}
-                          isUserLoggedIn={!!session}
-                          showChampionshipLink={false}
-                          searchQuery={searchQuery}
-                        />
+                // Category page rendering
+                (() => {
+                  const championshipsCount = groupedData.data.championships.length;
+                  const defaultOpenChampionships =
+                    championshipsCount <= 2
+                      ? groupedData.data.championships.map((item) => item.name)
+                      : [];
+
+                  return (
+                    <>
+                      {groupedData.data.championships.map(({ name, books }) => (
+                        <Accordion
+                          key={name}
+                          type="single"
+                          collapsible
+                          defaultValue={
+                            defaultOpenChampionships.includes(name) ? name : undefined
+                          }
+                          className="border rounded-xl overflow-hidden"
+                        >
+                          <AccordionItem value={name} className="border-none">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline bg-muted/30 hover:bg-muted/50">
+                              <div className="flex items-center gap-3">
+                                <Trophy className="h-5 w-5 text-yellow-500" />
+                                <span className="font-semibold text-base">{name}</span>
+                                <Badge variant="secondary" className="ml-2">
+                                  {books.length}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-0">
+                              <div className="space-y-3">
+                                {books.map((book) => (
+                                  <BookCard
+                                    key={book.id}
+                                    book={book}
+                                    onOutcomeClick={handleOutcomeClick}
+                                    currentCategory={categoryParam}
+                                    isUserLoggedIn={!!session}
+                                    showChampionshipLink={false}
+                                    searchQuery={searchQuery}
+                                  />
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
                       ))}
-                    </div>
-                  )}
-                </>
+                      {groupedData.data.noChampionshipBooks.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 px-1">
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                            <h3 className="font-medium text-sm text-muted-foreground">
+                              {t('otherEvents')}
+                            </h3>
+                          </div>
+                          {groupedData.data.noChampionshipBooks.map((book) => (
+                            <BookCard
+                              key={book.id}
+                              book={book}
+                              onOutcomeClick={handleOutcomeClick}
+                              currentCategory={categoryParam}
+                              isUserLoggedIn={!!session}
+                              showChampionshipLink={false}
+                              searchQuery={searchQuery}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()
               )}
             </div>
           ) : (
@@ -721,6 +844,7 @@ export default function ClientBookmakingDashboard({
             </div>
           )}
 
+          {/* Pagination (commented out in original) */}
           {/* {pagination.totalPages > 1 && (
             <ShadcnPagination pagination={pagination} onPageChange={handlePageChange} />
           )} */}
@@ -763,17 +887,15 @@ function BookCard({
   const firstFastBet = book.events?.find((event) => event.isFirstFastOption);
   const secondFastBet = book.events?.find((event) => event.isSecondFastOption);
   const mainTeams = book.teams?.slice(0, 2) || [];
-  const capitalizedStatus = bookStatus.charAt(0).toUpperCase() + bookStatus.slice(1).toLowerCase();
   const now = new Date();
   const bookDate = new Date(book.date);
   const isAcceptingBets = now < bookDate;
-  const displayCategory = book.category.charAt(0).toUpperCase() + book.category.slice(1).toLowerCase();
+  const sportName = book.category.charAt(0).toUpperCase() + book.category.slice(1).toLowerCase();
 
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
     timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: 'long',
-    day: '2-digit',
+    month: 'short',
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -794,211 +916,139 @@ function BookCard({
     );
   };
 
-  const handleChampionshipClick = (championship: string) => {
+  const handleChampionshipClick = (e: React.MouseEvent, championship: string) => {
+    e.stopPropagation();
     const url = new URL(window.location.href);
     url.searchParams.set('filter', championship);
     url.searchParams.delete('page');
     router.push(url.toString());
   };
 
-  const renderFastBetOutcomes = (event: any, isFirst: boolean = false) => {
+  const handleOutcomeClickWrapper = (e: React.MouseEvent, outcome: any, event: any, book: any) => {
+    e.stopPropagation();
+    if (!isAcceptingBets) return;
+    onOutcomeClick(outcome, event, book);
+  };
+
+  const handleCardClick = () => {
+    router.push(`/book/${book.id}`);
+  };
+
+  const getOutcomeLabel = (outcome: any, index: number, total: number): string => {
+    if (total === 3) {
+      if (index === 0) return '1';
+      if (index === 1) return 'X';
+      return '2';
+    }
+    if (total === 2) {
+      if (index === 0) return '1';
+      return '2';
+    }
+    const name = outcome.name.trim().toLowerCase();
+    if (name.includes('home') || name.includes('team 1')) return '1';
+    if (name.includes('away') || name.includes('team 2')) return '2';
+    if (name.includes('draw') || name.includes('tie')) return 'X';
+    return outcome.name.length > 3 ? outcome.name.slice(0, 3) : outcome.name;
+  };
+
+  const renderFastBetOutcomes = (event: any) => {
     if (!event || !event.outcomes || event.outcomes.length === 0) return null;
 
+    const outcomes = event.outcomes;
+    const gridCols = outcomes.length === 2 ? 'grid-cols-2' : outcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1';
+
     return (
-      <div
-        className={`p-3 sm:p-4 rounded-lg border border-border bg-muted/20 ${
-          isFirst ? 'flex-1' : 'w-full'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <Star className="h-4 w-4 text-yellow-500 shrink-0" />
-          <span className="text-sm font-semibold truncate flex-1" title={event.name}>
-            {searchQuery ? highlightText(event.name, searchQuery) : event.name}
-          </span>
+      <div className="mt-3 px-2 pb-2">
+        <div className="text-sm font-medium text-foreground truncate mb-2 text-center">
+          {searchQuery ? highlightText(event.name, searchQuery) : event.name}
         </div>
-        <div
-          className={`gap-2 sm:gap-3 w-full justify-between ${
-            isFirst
-              ? 'xl:flex grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3'
-              : 'lg:flex grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
-          }`}
-        >
-          {event.outcomes.map((outcome: any) => (
+        <div className={`grid ${gridCols} gap-2`}>
+          {outcomes.map((outcome: any, idx: number) => (
             <div
               key={outcome.id}
-              className={`flex items-center justify-between w-full p-2 sm:p-3 bg-background rounded-lg border border-border transition-all duration-200 group ${
+              className={`flex flex-col items-center justify-center p-2 min-h-[50px] bg-background rounded-lg border border-border transition-all duration-200 group/outcome ${
                 isAcceptingBets && isUserLoggedIn
                   ? 'cursor-pointer hover:bg-primary/10 hover:border-primary/30'
                   : isAcceptingBets && !isUserLoggedIn
                   ? 'cursor-pointer hover:bg-primary/10 hover:border-primary/30 border-primary/30'
                   : 'cursor-not-allowed opacity-60'
               }`}
-              onClick={() => {
-                if (!isAcceptingBets) return;
-                onOutcomeClick(outcome, event, book);
-              }}
+              onClick={(e) => handleOutcomeClickWrapper(e, outcome, event, book)}
             >
               <span
-                className={`text-xs sm:text-sm font-medium truncate mr-2 flex-1 ${
-                  isAcceptingBets ? 'group-hover:text-primary' : ''
+                className={`text-xl font-extrabold text-sky-400 ${
+                  isAcceptingBets ? 'group-hover/outcome:text-sky-300' : ''
                 }`}
               >
-                {searchQuery ? highlightText(outcome.name, searchQuery) : outcome.name}
+                {outcome.odds.toFixed(2)}
               </span>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="secondary"
-                  className={`text-xs sm:text-sm shrink-0 min-w-10 sm:min-w-12 text-center ${
-                    isAcceptingBets ? 'bg-primary/20 group-hover:bg-primary/30' : 'bg-muted'
-                  }`}
-                >
-                  {outcome.odds.toFixed(2)}
-                </Badge>
-              </div>
+              <span
+                className={`text-[10px] text-center font-medium ${
+                  isAcceptingBets ? 'group-hover/outcome:text-primary' : ''
+                }`}
+              >
+                {getOutcomeLabel(outcome, idx, outcomes.length)}
+              </span>
             </div>
           ))}
         </div>
         {!isAcceptingBets && (
-          <div className="mt-2 text-xs text-muted-foreground text-center">{t('betsClosed')}</div>
+          <div className="text-xs text-muted-foreground text-center mt-1">{t('betsClosed')}</div>
         )}
       </div>
     );
   };
 
+  const mainDisplayText = book.championship
+    ? book.championship
+    : mainTeams.length >= 2
+    ? `${mainTeams[0].name} vs ${mainTeams[1].name}`
+    : book.title;
+
   return (
-    <Card className="p-4 sm:p-6 hover:shadow-md transition-shadow bg-card border-border relative">
-      {/* {book.isHotEvent && (
-        <div className="absolute -top-2 -left-2 z-10">
-          <Badge className="bg-orange-500 text-white flex items-center gap-1">
-            <Flame className="h-3 w-3" />
-            Hot
-          </Badge>
+    <Card
+      className="hover:shadow-md transition-shadow bg-black border-border cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="pb-1 mb-3 border-b border-border pt-2">
+        <div className="flex items-center gap-2 px-4">
+          <span className="text-xs font-medium text-muted-foreground truncate">
+            {sportName}. {mainDisplayText}
+          </span>
         </div>
-      )} */}
-
-      {/* {book.isNationalSport && (
-        <div className="absolute -top-2 -right-2 z-10">
-          <Badge className="bg-blue-500 text-white flex items-center gap-1">
-            <Globe className="h-3 w-3" />
-            National
-          </Badge>
-        </div>
-      )} */}
-
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-          {book.image && (
-            <img
-              src={book.image}
-              alt={book.title}
-              className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 mb-2">
-              <h3 className="font-semibold text-lg sm:text-xl truncate text-foreground">
-                {searchQuery ? highlightText(book.title, searchQuery) : book.title}
-              </h3>
-              <div className="flex gap-2 sm:flex-row flex-col">
-                <div className="flex gap-2">
-                  <Badge variant="secondary" className="text-xs bg-muted w-fit">
-                    {displayCategory}
-                  </Badge>
-                  <Badge
-                    variant={
-                      bookStatus === 'LIVE'
-                        ? 'default'
-                        : bookStatus === 'UPCOMING'
-                        ? 'secondary'
-                        : 'outline'
-                    }
-                    className="text-xs w-fit"
-                  >
-                    {capitalizedStatus}
-                  </Badge>
-                </div>
-                <div className="flex gap-2">
-                  {!isAcceptingBets && (
-                    <Badge variant="outline" className="text-xs bg-destructive/20 text-destructive">
-                      {t('betsClosedBadge')}
-                    </Badge>
-                  )}
-                  {book.country && (
-                    <Badge variant="outline" className="text-xs">
-                      {book.country}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-sm text-muted-foreground mb-2">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span className="text-xs sm:text-sm">{formattedDate}</span>
-              </div>
-            </div>
-
-            {book.championship && showChampionshipLink && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleChampionshipClick(book.championship!)}
-                  className="h-6 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                >
-                  <Trophy className="h-3 w-3 mr-1" />
-                  {searchQuery ? highlightText(book.championship, searchQuery) : book.championship}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <Link href={`/book/${book.id}`} className="w-full sm:w-auto">
-          <Button size="sm" variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
-            {t('allOutcomes')}
-            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-          </Button>
-        </Link>
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:gap-6 lg:mb-4">
-        {mainTeams.length > 0 && (
-          <div className="flex flex-col gap-3 sm:gap-4 mb-4 lg:mb-0 lg:w-[400px] lg:shrink-0">
-            {mainTeams.map((team) => (
-              <div key={team.id} className="flex items-center gap-2 sm:gap-3">
-                {team.image && (
-                  <img
-                    src={team.image}
-                    alt={team.name}
-                    className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border border-border shrink-0"
-                  />
-                )}
-                <span className="text-sm sm:text-base font-medium text-foreground truncate">
-                  {searchQuery ? highlightText(team.name, searchQuery) : team.name}
-                </span>
-              </div>
-            ))}
-            {book.teams && book.teams.length > 2 && (
-              <Badge variant="outline" className="text-xs bg-muted w-fit">
-                {t('moreTeams', { count: book.teams.length - 2 })}
-              </Badge>
+      <div className="space-y-2 mb-3 px-4">
+        {mainTeams.map((team) => (
+          <div key={team.id} className="flex items-center gap-2">
+            {team.image && (
+              <img
+                src={team.image}
+                alt={team.name}
+                className="w-6 h-6 rounded-full object-cover border border-border shrink-0"
+              />
             )}
+            <span className="text-sm font-medium text-foreground truncate">
+              {searchQuery ? highlightText(team.name, searchQuery) : team.name}
+            </span>
           </div>
+        ))}
+        {book.teams && book.teams.length > 2 && (
+          <Badge variant="outline" className="text-xs bg-muted w-fit px-2 py-0">
+            {t('moreTeams', { count: book.teams.length - 2 })}
+          </Badge>
         )}
-
-        <div className="lg:flex-1 mb-4 lg:mb-0">
-          {firstFastBet && renderFastBetOutcomes(firstFastBet, true)}
-        </div>
       </div>
 
-      <div className="w-full">{secondFastBet && renderFastBetOutcomes(secondFastBet, false)}</div>
+      <div className="text-xs text-muted-foreground mb-1 px-4">{formattedDate}</div>
+
+      {firstFastBet && renderFastBetOutcomes(firstFastBet)}
+      {secondFastBet && renderFastBetOutcomes(secondFastBet)}
 
       {!firstFastBet && !secondFastBet && (
-        <div className="text-center py-6 sm:py-8 text-muted-foreground border border-dashed border-border rounded-lg">
-          <Trophy className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
-          <p className="text-sm sm:text-base">{t('noFastBets')}</p>
+        <div className="text-center py-6 text-muted-foreground border border-dashed border-border rounded-lg">
+          <Trophy className="h-8 w-8 mx-auto mb-3 opacity-50" />
+          <p className="text-sm">{t('noFastBets')}</p>
         </div>
       )}
     </Card>

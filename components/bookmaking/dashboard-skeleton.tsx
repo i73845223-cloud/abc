@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardSkeleton() {
   return (
-    <div className="container mx-auto px-1 px:px-4 py-6 space-y-6">
+    <div className="max-w-[800px] mx-auto px-1 px:px-4 py-6 space-y-6">
       <Skeleton className="h-10 w-full rounded-md" />
 
       <div className="flex gap-2 overflow-hidden">
@@ -14,8 +14,8 @@ export default function DashboardSkeleton() {
 
       {[...Array(3)].map((_, i) => (
         <Card key={i} className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="px-4 py-3 bg-muted/30">
+          <CardContent className="p-0 bg-black">
+            <div className="px-4 py-3">
               <Skeleton className="h-6 w-40" />
             </div>
             <div className="p-4 space-y-4">

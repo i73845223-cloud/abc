@@ -137,7 +137,7 @@ export default function EventsTab({ book, userBets }: EventsTabProps) {
 
   return (
     <>
-      <Card>
+      <Card className='bg-black'>
         <CardHeader>
           <CardTitle>{t('eventsAndBettingOptions')}</CardTitle>
           <CardDescription>
