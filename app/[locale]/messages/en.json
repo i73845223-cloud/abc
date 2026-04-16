@@ -80,7 +80,8 @@
     "currentlyViewing": "Currently viewing:",
     "in": "in",
     "clearAll": "Clear All",
-    "otherEvents": "Other Events"
+    "otherEvents": "Other Events",
+    "viewAllOptions": "View all options"
   },
   "BettingSlip": {
     "errorTitle": "Something went wrong",

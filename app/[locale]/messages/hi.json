@@ -79,7 +79,8 @@
     "currentlyViewing": "वर्तमान में देख रहे हैं:",
     "in": "में",
     "clearAll": "सब साफ़ करें",
-    "otherEvents": "अन्य इवेंट"
+    "otherEvents": "अन्य इवेंट",
+    "viewAllOptions": "सभी विकल्प देखें"
   },
   "BettingSlip": {
     "errorTitle": "कुछ गलत हो गया",

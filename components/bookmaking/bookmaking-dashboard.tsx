@@ -1045,6 +1045,21 @@ function BookCard({
       {firstFastBet && renderFastBetOutcomes(firstFastBet)}
       {secondFastBet && renderFastBetOutcomes(secondFastBet)}
 
+      {(firstFastBet || secondFastBet) && (
+        <div className="px-2 pb-2 mt-1">
+          <Link
+            href={`/book/${book.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block w-full"
+          >
+            <Button variant="outline" size="sm" className="w-full text-xs h-8">
+              {t('viewAllOptions')}
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {!firstFastBet && !secondFastBet && (
         <div className="text-center py-6 text-muted-foreground border border-dashed border-border rounded-lg">
           <Trophy className="h-8 w-8 mx-auto mb-3 opacity-50" />

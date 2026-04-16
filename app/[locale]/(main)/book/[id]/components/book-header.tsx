@@ -5,10 +5,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Calendar, Users } from 'lucide-react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 interface BookHeaderProps {
   book: Book & { isLive: boolean; isUpcoming: boolean }
@@ -17,6 +17,8 @@ interface BookHeaderProps {
 export default function BookHeader({ book }: BookHeaderProps) {
   const t = useTranslations('Book')
   const locale = useLocale()
+  const router = useRouter()
+  
   const acceptingBets = book.isUpcoming
   const hasTeams = book.teams && book.teams.length > 0
 
@@ -31,7 +33,6 @@ export default function BookHeader({ book }: BookHeaderProps) {
       ? `${mainTeams[0].name} vs ${mainTeams[1].name}`
       : book.title
 
-
   const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
     timeZone: 'Asia/Kolkata',
     year: 'numeric',
@@ -42,15 +43,26 @@ export default function BookHeader({ book }: BookHeaderProps) {
     hour12: false
   })
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/book')
+    }
+  }
+
   return (
     <>
       <div className="flex items-center gap-4 sm:mb-4">
-        <Link href="/book" className="flex-shrink-0">
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            {t('backToBooks')}
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleBack}
+          className="text-xs sm:text-sm"
+        >
+          <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          {t('backToBooks')}
+        </Button>
       </div>
 
       <Card>
@@ -60,14 +72,19 @@ export default function BookHeader({ book }: BookHeaderProps) {
               {sportName}. {mainDisplayText}
             </h1>
             <div className="flex flex-wrap gap-1 sm:gap-2 justify-start sm:justify-end">
-              <Badge variant={
-                book.isLive ? 'default' : 
-                book.isUpcoming ? 'secondary' : 'outline'
-              } className="text-xs sm:text-sm">
+              <Badge
+                variant={
+                  book.isLive ? 'default' : book.isUpcoming ? 'secondary' : 'outline'
+                }
+                className="text-xs sm:text-sm"
+              >
                 {book.isLive ? 'LIVE' : capitalizedStatus}
               </Badge>
               {!acceptingBets && (
-                <Badge variant="outline" className="text-xs sm:text-sm bg-destructive/20 text-destructive">
+                <Badge
+                  variant="outline"
+                  className="text-xs sm:text-sm bg-destructive/20 text-destructive"
+                >
                   {t('betsClosed')}
                 </Badge>
               )}
@@ -76,9 +93,7 @@ export default function BookHeader({ book }: BookHeaderProps) {
 
           <div className="flex items-center gap-2 text-muted-foreground mb-4 sm:mb-6">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm break-words">
-              {formattedDate}
-            </span>
+            <span className="text-xs sm:text-sm break-words">{formattedDate}</span>
           </div>
 
           <Separator className="mb-4 sm:mb-6" />
@@ -89,18 +104,20 @@ export default function BookHeader({ book }: BookHeaderProps) {
                 <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 {t('teams')}
               </h2>
-              
+
               <div className="block sm:hidden space-y-4">
                 {book.teams!.map((team, index) => (
                   <div key={team.id} className="flex flex-col items-center">
                     {team.image && (
-                      <img 
-                        src={team.image} 
+                      <img
+                        src={team.image}
                         alt={team.name}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-muted mb-2"
                       />
                     )}
-                    <span className="font-medium text-center text-sm sm:text-base">{team.name}</span>
+                    <span className="font-medium text-center text-sm sm:text-base">
+                      {team.name}
+                    </span>
                     {index < book.teams!.length - 1 && (
                       <div className="w-full flex sm:hidden justify-center pt-2">
                         <span className="text-lg font-bold text-muted-foreground">vs</span>
@@ -114,8 +131,8 @@ export default function BookHeader({ book }: BookHeaderProps) {
                 {book.teams!.map((team, index) => (
                   <div key={team.id} className="flex flex-col items-center relative">
                     {team.image && (
-                      <img 
-                        src={team.image} 
+                      <img
+                        src={team.image}
                         alt={team.name}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-muted mb-2"
                       />
