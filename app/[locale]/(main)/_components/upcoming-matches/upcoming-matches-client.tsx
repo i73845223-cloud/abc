@@ -155,8 +155,10 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
     return name.length > 3 ? name.slice(0, 3) : name
   }
 
+  // Get outcomes and sort by order
   const outcomes = firstEvent?.outcomes || []
-  const gridCols = outcomes.length === 2 ? 'grid-cols-2' : outcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1'
+  const sortedOutcomes = [...outcomes].sort((a, b) => a.order - b.order)
+  const gridCols = sortedOutcomes.length === 2 ? 'grid-cols-2' : sortedOutcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1'
 
   return (
     <div className="h-full">
@@ -207,13 +209,13 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
             })}
           </div>
 
-          {outcomes.length > 0 && (
+          {sortedOutcomes.length > 0 && (
             <div className='px-2 pb-2'>
               <div className="text-sm font-medium text-foreground truncate mb-2 text-center">
                 {firstEvent.name}
               </div>
               <div className={`grid ${gridCols} gap-2`}>
-                {outcomes.map((outcome, idx) => (
+                {sortedOutcomes.map((outcome, idx) => (
                   <div
                     key={outcome.id}
                     className={`flex flex-col items-center justify-center p-2 min-h-[50px] bg-background rounded-lg border border-border transition-all duration-200 group/outcome ${
@@ -239,7 +241,7 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
                     <span className={`text-[8px] text-center font-medium ${
                       isAcceptingBets ? 'group-hover/outcome:text-primary' : ''
                     }`}>
-                      {getOutcomeLabel(outcome, idx, outcomes.length)}
+                      {getOutcomeLabel(outcome, idx, sortedOutcomes.length)}
                     </span>
                   </div>
                 ))}

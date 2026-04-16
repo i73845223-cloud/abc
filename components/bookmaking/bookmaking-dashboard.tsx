@@ -954,8 +954,10 @@ function BookCard({
   const renderFastBetOutcomes = (event: any) => {
     if (!event || !event.outcomes || event.outcomes.length === 0) return null;
 
+    // Sort outcomes by order
     const outcomes = event.outcomes;
-    const gridCols = outcomes.length === 2 ? 'grid-cols-2' : outcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1';
+    const sortedOutcomes = [...outcomes].sort((a: any, b: any) => a.order - b.order);
+    const gridCols = sortedOutcomes.length === 2 ? 'grid-cols-2' : sortedOutcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1';
 
     return (
       <div className="mt-3 px-2 pb-2">
@@ -963,7 +965,7 @@ function BookCard({
           {searchQuery ? highlightText(event.name, searchQuery) : event.name}
         </div>
         <div className={`grid ${gridCols} gap-2`}>
-          {outcomes.map((outcome: any, idx: number) => (
+          {sortedOutcomes.map((outcome: any, idx: number) => (
             <div
               key={outcome.id}
               className={`flex flex-col items-center justify-center p-2 min-h-[50px] bg-background rounded-lg border border-border transition-all duration-200 group/outcome ${
@@ -987,7 +989,7 @@ function BookCard({
                   isAcceptingBets ? 'group-hover/outcome:text-primary' : ''
                 }`}
               >
-                {getOutcomeLabel(outcome, idx, outcomes.length)}
+                {getOutcomeLabel(outcome, idx, sortedOutcomes.length)}
               </span>
             </div>
           ))}
@@ -1069,7 +1071,6 @@ function BookCard({
     </Card>
   );
 }
-
 function NoBooksCard({
   category,
   filter,

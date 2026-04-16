@@ -105,15 +105,19 @@ export default function EventsTab({ book, userBets }: EventsTabProps) {
     window.location.reload()
   }
 
-  const eventsWithUserStake: EventWithUserStake[] = ((book.events || []) as unknown as Event[]).map(event => ({
-    ...event,
-    outcomes: (event.outcomes || []).map(outcome => ({
-      ...outcome,
-      userStake: userBets
-        .filter(bet => bet.outcomeId === outcome.id)
-        .reduce((total, bet) => total + bet.amount, 0)
-    }))
-  }))
+  const eventsWithUserStake: EventWithUserStake[] = ((book.events || []) as unknown as Event[]).map(event => {
+    // Sort outcomes by order
+    const sortedOutcomes = [...(event.outcomes || [])].sort((a, b) => a.order - b.order)
+    return {
+      ...event,
+      outcomes: sortedOutcomes.map(outcome => ({
+        ...outcome,
+        userStake: userBets
+          .filter(bet => bet.outcomeId === outcome.id)
+          .reduce((total, bet) => total + bet.amount, 0)
+      }))
+    }
+  })
 
   const getOutcomeGridClass = (outcomesCount: number) => {
     if (outcomesCount <= 4) {
@@ -217,13 +221,13 @@ export default function EventsTab({ book, userBets }: EventsTabProps) {
                         onClick={() => book.isUpcoming && handleOutcomeClick(outcome, event)}
                         disabled={!book.isUpcoming}
                       >
-                        <div className={`font-semibold text-sm sm:text-base text-center break-words ${getTextClassName(book.isUpcoming, !!session)}`}>
-                          {outcome.name}
-                        </div>
                         <div className="flex flex-col items-center gap-2">
                           <span className={`text-xl sm:text-2xl font-bold px-2 sm:px-3 py-1 rounded-md ${getOddsClassName(book.isUpcoming, !!session)}`}>
                             {outcome.odds.toFixed(2)}
                           </span>
+                        </div>
+                        <div className={`font-semibold text-xs text-center break-words ${getTextClassName(book.isUpcoming, !!session)}`}>
+                          {outcome.name}
                         </div>
                         {outcome.userStake > 0 && (
                           <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
