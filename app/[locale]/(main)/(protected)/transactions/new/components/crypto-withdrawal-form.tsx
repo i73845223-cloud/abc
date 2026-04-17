@@ -207,51 +207,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="amountInr"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
-                {userBalance >= effectiveMinimum && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                    {[25, 50, 75, 100].map(pct => {
-                      const suggested = (userBalance * pct) / 100;
-                      const disabled = suggested < effectiveMinimum;
-                      return (
-                        <Button
-                          key={pct}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-9"
-                          onClick={() => handleAmountSuggestion(pct)}
-                          disabled={disabled}
-                        >
-                          {pct}%
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="relative">
-                  <Banknote className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="0.00"
-                    className="pl-10 h-12 text-lg"
-                    {...field}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {t('minAmount')}: ₹{effectiveMinimum.toLocaleString('en-IN')} | {t('maxAmount')}: ₹{MAX_WITHDRAWAL.toLocaleString('en-IN')}
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
+                  <FormField
             control={form.control}
             name="currency"
             render={({ field }) => (
@@ -304,6 +260,52 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
               </FormItem>
             )}
           />
+
+
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="amountInr"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
+                {userBalance >= effectiveMinimum && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                    {[25, 50, 75, 100].map(pct => {
+                      const suggested = (userBalance * pct) / 100;
+                      const disabled = suggested < effectiveMinimum;
+                      return (
+                        <Button
+                          key={pct}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9"
+                          onClick={() => handleAmountSuggestion(pct)}
+                          disabled={disabled}
+                        >
+                          {pct}%
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="relative">
+                  <Banknote className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="0.00"
+                    className="pl-10 h-12 text-lg"
+                    {...field}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {t('minAmount')}: ₹{effectiveMinimum.toLocaleString('en-IN')} | {t('maxAmount')}: ₹{MAX_WITHDRAWAL.toLocaleString('en-IN')}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
 
           <FormField
             control={form.control}
