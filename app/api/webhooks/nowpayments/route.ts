@@ -12,11 +12,14 @@ export async function POST(req: Request) {
     const hmac = crypto.createHmac('sha512', process.env.NOWPAYMENTS_IPN_SECRET!);
     const digest = hmac.update(body).digest('hex');
     if (signature !== digest) {
+      console.error('[WEBHOOK] Invalid signature');
       return new NextResponse('Invalid signature', { status: 401 });
     }
 
     const data = JSON.parse(body);
     const { payment_id, payment_status } = data;
+    const normalizedStatus = payment_status.toLowerCase();
+    console.log(`[WEBHOOK] Received payment_id: ${payment_id}, status: ${payment_status} (normalized: ${normalizedStatus})`);
 
     const paymentIdStr = payment_id.toString();
 
@@ -26,6 +29,7 @@ export async function POST(req: Request) {
     });
 
     if (!cryptoPayment) {
+      console.error(`[WEBHOOK] CryptoPayment not found for payment_id: ${paymentIdStr}`);
       return new NextResponse('Payment not found', { status: 404 });
     }
 
@@ -34,31 +38,30 @@ export async function POST(req: Request) {
       data: { status: mapNowPaymentsStatus(payment_status) },
     });
 
-    if (payment_status === 'finished' && cryptoPayment.transactionId) {
-      const transactionId = cryptoPayment.transactionId;
-
-      await db.$transaction(async (tx) => {
-        await tx.transaction.update({
-          where: { id: transactionId },
+    if (cryptoPayment.transactionId) {
+      if (normalizedStatus === 'finished' && cryptoPayment.transaction?.status !== TransactionStatus.success) {
+        console.log(`[WEBHOOK] Updating transaction ${cryptoPayment.transactionId} to success`);
+        await db.transaction.update({
+          where: { id: cryptoPayment.transactionId },
           data: { status: TransactionStatus.success },
         });
 
-        await activateDepositBonuses(tx, cryptoPayment.userId, Number(cryptoPayment.baseAmount));
-
-      });
-
-      BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
-      console.log(`Deposit succeeded for user ${cryptoPayment.userId}`);
-    }
-
-    if ((payment_status === 'failed' || payment_status === 'expired') && cryptoPayment.transactionId) {
-      const transactionId = cryptoPayment.transactionId;
-      await db.transaction.update({
-        where: { id: transactionId },
-        data: { status: TransactionStatus.fail },
-      });
-      BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
-      console.log(`Deposit failed for user ${cryptoPayment.userId}`);
+        await activateDepositBonuses(db, cryptoPayment.userId, Number(cryptoPayment.baseAmount));
+        BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
+        console.log(`Deposit succeeded for user ${cryptoPayment.userId}`);
+      } else if ((normalizedStatus === 'failed' || normalizedStatus === 'expired') && cryptoPayment.transaction?.status !== TransactionStatus.fail) {
+        console.log(`[WEBHOOK] Updating transaction ${cryptoPayment.transactionId} to fail`);
+        await db.transaction.update({
+          where: { id: cryptoPayment.transactionId },
+          data: { status: TransactionStatus.fail },
+        });
+        BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
+        console.log(`Deposit failed for user ${cryptoPayment.userId}`);
+      } else {
+        console.log(`[WEBHOOK] No update needed: normalizedStatus=${normalizedStatus}, transaction status=${cryptoPayment.transaction?.status}`);
+      }
+    } else {
+      console.log(`[WEBHOOK] No transaction linked to cryptoPayment ${cryptoPayment.id}`);
     }
 
     return NextResponse.json({ received: true });
@@ -69,7 +72,8 @@ export async function POST(req: Request) {
 }
 
 function mapNowPaymentsStatus(npStatus: string): CryptoPaymentStatus {
-  switch (npStatus) {
+  const s = npStatus.toLowerCase();
+  switch (s) {
     case 'waiting': return CryptoPaymentStatus.PENDING;
     case 'confirming': return CryptoPaymentStatus.CONFIRMING;
     case 'confirmed': return CryptoPaymentStatus.CONFIRMED;
@@ -81,7 +85,7 @@ function mapNowPaymentsStatus(npStatus: string): CryptoPaymentStatus {
 }
 
 async function activateDepositBonuses(tx: any, userId: string, depositAmount: number) {
-  const pendingBonuses = await tx.bonus.findMany({
+  const pendingDepositBonuses = await tx.bonus.findMany({
     where: {
       userId,
       type: { in: ['DEPOSIT_BONUS', 'COMBINED'] },
@@ -90,7 +94,7 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
     include: { promoCode: true },
   });
 
-  for (const bonus of pendingBonuses) {
+  for (const bonus of pendingDepositBonuses) {
     const minDepositAmount = bonus.promoCode?.minDepositAmount?.toNumber() || 0;
     if (depositAmount >= minDepositAmount) {
       const bonusPercentage = bonus.promoCode?.bonusPercentage || 0;
@@ -118,7 +122,7 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
           amount: bonusAmount,
           status: 'success',
           description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
-          category: 'transaction',
+          category: 'bonus',
           bonusId: bonus.id,
         },
       });

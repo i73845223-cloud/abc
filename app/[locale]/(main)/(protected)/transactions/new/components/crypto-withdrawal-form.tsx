@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,56 +22,17 @@ interface WithdrawalFormProps {
 }
 
 const currencyOptions = [
-  { 
-    value: 'usdttrc20', 
-    display: 'USDT TRC20', 
-    tokenImage: CRYPTO_IMAGES['tether-usdt'],
-    networkImage: CRYPTO_IMAGES['tron-network']
-  },
-  { 
-    value: 'usdterc20', 
-    display: 'USDT ERC20', 
-    tokenImage: CRYPTO_IMAGES['tether-usdt'],
-    networkImage: CRYPTO_IMAGES['ethereum-network']
-  },
-  { 
-    value: 'usdcerc20', 
-    display: 'USDC ERC20', 
-    tokenImage: CRYPTO_IMAGES['usd-coin-usdc'],
-    networkImage: CRYPTO_IMAGES['ethereum-network']
-  },
-  { 
-    value: 'usdcsol', 
-    display: 'USDC SOL', 
-    tokenImage: CRYPTO_IMAGES['usd-coin-usdc'],
-    networkImage: CRYPTO_IMAGES['solana-network']
-  },
-  { 
-    value: 'eth', 
-    display: 'ETH', 
-    tokenImage: CRYPTO_IMAGES['ethereum-eth']
-  },
-  { 
-    value: 'btc', 
-    display: 'BTC', 
-    tokenImage: CRYPTO_IMAGES['bitcoin-btc']
-  },
-  { 
-    value: 'sol', 
-    display: 'SOL', 
-    tokenImage: CRYPTO_IMAGES['solana-sol']
-  },
-  { 
-    value: 'trx', 
-    display: 'TRX', 
-    tokenImage: CRYPTO_IMAGES['tron-trx']
-  },
+  { value: 'usdttrc20', display: 'USDT TRC20', tokenImage: CRYPTO_IMAGES['tether-usdt'], networkImage: CRYPTO_IMAGES['tron-network'] },
+  { value: 'usdterc20', display: 'USDT ERC20', tokenImage: CRYPTO_IMAGES['tether-usdt'], networkImage: CRYPTO_IMAGES['ethereum-network'] },
+  { value: 'usdc', display: 'USDC ERC20', tokenImage: CRYPTO_IMAGES['usd-coin-usdc'], networkImage: CRYPTO_IMAGES['ethereum-network'] },
+  { value: 'usdcsol', display: 'USDC SOL', tokenImage: CRYPTO_IMAGES['usd-coin-usdc'], networkImage: CRYPTO_IMAGES['solana-network'] },
+  { value: 'eth', display: 'ETH', tokenImage: CRYPTO_IMAGES['ethereum-eth'] },
+  { value: 'btc', display: 'BTC', tokenImage: CRYPTO_IMAGES['bitcoin-btc'] },
+  { value: 'sol', display: 'SOL', tokenImage: CRYPTO_IMAGES['solana-sol'] },
+  { value: 'trx', display: 'TRX', tokenImage: CRYPTO_IMAGES['tron-trx'] },
 ];
 
-export function CryptoWithdrawalForm({ 
-  userBalance, 
-  minimumWithdrawal = 1000
-}: WithdrawalFormProps) {
+export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackMinimum = 1000 }: WithdrawalFormProps) {
   const t = useTranslations('Withdrawal');
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,40 +40,76 @@ export function CryptoWithdrawalForm({
   const [transactionId, setTransactionId] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [dynamicMinInr, setDynamicMinInr] = useState<number | null>(null);
+  const [isLoadingMin, setIsLoadingMin] = useState(false);
+  const MAX_WITHDRAWAL = 100000;
 
-  const withdrawalSchema = useMemo(
-    () =>
-      z.object({
-        amountInr: z
-          .string()
-          .min(1, t('amountRequired'))
-          .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, t('amountInvalid'))
-          .refine((val) => parseFloat(val) >= minimumWithdrawal, {
-            message: t('minimumAmount', { amount: minimumWithdrawal }),
-          })
-          .refine((val) => parseFloat(val) <= userBalance, {
-            message: t('insufficientBalance'),
-          }),
-        currency: z.string().min(1, t('currencyRequired')),
-        address: z.string().min(1, t('addressRequired')),
-      }),
-    [userBalance, minimumWithdrawal, t]
-  );
+  const withdrawalSchema = z.object({
+    amountInr: z.string().min(1, t('amountRequired')),
+    currency: z.string().min(1, t('currencyRequired')),
+    address: z.string().min(1, t('addressRequired')),
+  });
 
   type WithdrawalFormValues = z.infer<typeof withdrawalSchema>;
 
   const form = useForm<WithdrawalFormValues>({
     resolver: zodResolver(withdrawalSchema),
-    defaultValues: {
-      amountInr: '',
-      currency: '',
-      address: '',
-    },
+    defaultValues: { amountInr: '', currency: '', address: '' },
+    mode: 'onChange',
   });
+
+  const selectedCurrency = form.watch('currency');
+  const amountInr = form.watch('amountInr');
+
+  useEffect(() => {
+    if (!selectedCurrency) {
+      setDynamicMinInr(null);
+      return;
+    }
+    const fetchMinAmount = async () => {
+      setIsLoadingMin(true);
+      try {
+        const response = await fetch(`/api/crypto/min-amount?currency=${selectedCurrency}`);
+        if (response.ok) {
+          const data = await response.json();
+          const minAmount = Math.max(data.minAmountInr, fallbackMinimum);
+          setDynamicMinInr(minAmount);
+        } else {
+          setDynamicMinInr(fallbackMinimum);
+        }
+      } catch (error) {
+        console.error('Failed to fetch withdrawal minimum:', error);
+        setDynamicMinInr(fallbackMinimum);
+      } finally {
+        setIsLoadingMin(false);
+      }
+    };
+    fetchMinAmount();
+  }, [selectedCurrency, fallbackMinimum]);
+
+  useEffect(() => {
+    const amount = parseFloat(amountInr);
+    if (isNaN(amount) || amountInr === '') {
+      form.clearErrors('amountInr');
+      return;
+    }
+    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    if (amount < effectiveMin) {
+      form.setError('amountInr', { type: 'manual', message: t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') }) });
+    } else if (amount > MAX_WITHDRAWAL) {
+      form.setError('amountInr', { type: 'manual', message: t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') }) });
+    } else if (amount > userBalance) {
+      form.setError('amountInr', { type: 'manual', message: t('insufficientBalance') });
+    } else {
+      form.clearErrors('amountInr');
+    }
+  }, [amountInr, dynamicMinInr, userBalance, form, t, fallbackMinimum]);
 
   const handleAmountSuggestion = (percentage: number) => {
     const suggestedAmount = (userBalance * percentage) / 100;
-    const finalAmount = Math.min(suggestedAmount, userBalance);
+    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    let finalAmount = Math.max(suggestedAmount, effectiveMin);
+    if (finalAmount > MAX_WITHDRAWAL) finalAmount = MAX_WITHDRAWAL;
     form.setValue('amountInr', finalAmount.toFixed(2));
     form.trigger('amountInr');
   };
@@ -125,9 +122,21 @@ export function CryptoWithdrawalForm({
   const onSubmit = async (data: WithdrawalFormValues) => {
     setSubmitError(null);
     const amount = parseFloat(data.amountInr);
-    
+    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
     if (amount > userBalance) {
       const errorMsg = t('insufficientBalance');
+      setSubmitError(errorMsg);
+      toast({ variant: 'destructive', title: t('error'), description: errorMsg });
+      return;
+    }
+    if (amount < effectiveMin) {
+      const errorMsg = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') });
+      setSubmitError(errorMsg);
+      toast({ variant: 'destructive', title: t('error'), description: errorMsg });
+      return;
+    }
+    if (amount > MAX_WITHDRAWAL) {
+      const errorMsg = t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') });
       setSubmitError(errorMsg);
       toast({ variant: 'destructive', title: t('error'), description: errorMsg });
       return;
@@ -138,36 +147,18 @@ export function CryptoWithdrawalForm({
       const response = await fetch('/api/crypto/withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amountInr: amount,
-          currency: data.currency,
-          address: data.address,
-        }),
+        body: JSON.stringify({ amountInr: amount, currency: data.currency, address: data.address }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Request failed');
-      }
-
+      if (!response.ok) throw new Error(await response.text());
       const result = await response.json();
       setTransactionId(result.withdrawalId);
       setSuccess(true);
       form.reset();
     } catch (error) {
-      console.error('Withdrawal error caught:', error);
-
-      let errorMessage = t('contactSupport');
-      if (error instanceof Error && error.message.includes('Insufficient funds')) {
-        errorMessage = t('insufficientBalance');
-      }
-
+      console.error('Withdrawal error:', error);
+      const errorMessage = error instanceof Error && error.message.includes('Insufficient funds') ? t('insufficientBalance') : t('contactSupport');
       setSubmitError(errorMessage);
-      toast({
-        variant: 'destructive',
-        title: t('error'),
-        description: errorMessage,
-      });
+      toast({ variant: 'destructive', title: t('error'), description: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -181,22 +172,21 @@ export function CryptoWithdrawalForm({
             <CheckCircle2 className="h-8 w-8 text-green-600" />
           </div>
           <CardTitle className="text-2xl">{t('withdrawalSuccess')}</CardTitle>
-          <CardDescription>
-            {t('withdrawalSuccessDescription')}
-          </CardDescription>
+          <CardDescription>{t('withdrawalSuccessDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm text-muted-foreground">{t('transactionId')}</p>
             <p className="font-mono text-lg font-bold">{transactionId}</p>
           </div>
-          <Button onClick={() => setSuccess(false)}>
-            {t('newWithdrawal')}
-          </Button>
+          <Button onClick={() => setSuccess(false)}>{t('newWithdrawal')}</Button>
         </CardContent>
       </Card>
     );
   }
+
+  const effectiveMinimum = dynamicMinInr ?? fallbackMinimum;
+  const isButtonDisabled = isSubmitting || isLoadingMin || !form.formState.isValid;
 
   return (
     <Form {...form}>
@@ -209,11 +199,10 @@ export function CryptoWithdrawalForm({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              <Balance />
-            </div>
+            <div className="text-3xl font-bold text-green-600"><Balance /></div>
             <p className="text-sm text-muted-foreground mt-2">
-              {t('minimumWithdrawal')}: ₹ 1,000
+              {t('minimumWithdrawal')}: ₹{effectiveMinimum.toLocaleString('en-IN')}
+              {isLoadingMin && <span className="ml-2 text-xs">(updating...)</span>}
             </p>
           </CardContent>
         </Card>
@@ -225,22 +214,22 @@ export function CryptoWithdrawalForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
-                {userBalance >= minimumWithdrawal && (
+                {userBalance >= effectiveMinimum && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                    {[25, 50, 75, 100].map((percentage) => {
-                      const suggestedAmount = (userBalance * percentage) / 100;
-                      const isDisabled = suggestedAmount < minimumWithdrawal;
+                    {[25, 50, 75, 100].map(pct => {
+                      const suggested = (userBalance * pct) / 100;
+                      const disabled = suggested < effectiveMinimum;
                       return (
                         <Button
-                          key={percentage}
+                          key={pct}
                           type="button"
                           variant="outline"
                           size="sm"
                           className="h-9"
-                          onClick={() => handleAmountSuggestion(percentage)}
-                          disabled={isDisabled}
+                          onClick={() => handleAmountSuggestion(pct)}
+                          disabled={disabled}
                         >
-                          {percentage}%
+                          {pct}%
                         </Button>
                       );
                     })}
@@ -255,7 +244,7 @@ export function CryptoWithdrawalForm({
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {t('minAmount')}: ₹ 1,000 | {t('maxAmount')}: ₹ 1,00,000
+                  {t('minAmount')}: ₹{effectiveMinimum.toLocaleString('en-IN')} | {t('maxAmount')}: ₹{MAX_WITHDRAWAL.toLocaleString('en-IN')}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -269,7 +258,7 @@ export function CryptoWithdrawalForm({
               <FormItem>
                 <FormLabel className="text-lg font-semibold">{t('cryptoCurrency')}</FormLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {currencyOptions.map((option) => (
+                  {currencyOptions.map(option => (
                     <Button
                       key={option.value}
                       type="button"
@@ -286,14 +275,13 @@ export function CryptoWithdrawalForm({
                             height={40}
                             className="w-full h-full object-contain"
                             onError={() => handleImageError(option.value)}
-                            unoptimized // Add if images are from external domains or blob
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-full bg-muted rounded-full flex items-center justify-center">
                             <span className="text-xs text-muted-foreground">?</span>
                           </div>
                         )}
-                        
                         {option.networkImage && !imageErrors[`${option.value}-network`] && (
                           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
                             <Image
@@ -324,14 +312,9 @@ export function CryptoWithdrawalForm({
               <FormItem>
                 <FormLabel>{t('withdrawalAddress')}</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder={t('enterCryptoAddress')}
-                    {...field}
-                  />
+                  <Input placeholder={t('enterCryptoAddress')} {...field} />
                 </FormControl>
-                <FormDescription>
-                  {t('addressDescription')}
-                </FormDescription>
+                <FormDescription>{t('addressDescription')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -348,7 +331,7 @@ export function CryptoWithdrawalForm({
         <Button
           type="submit"
           className="w-full h-12 text-lg font-semibold"
-          disabled={isSubmitting || !form.formState.isValid}
+          disabled={isButtonDisabled}
         >
           {isSubmitting ? (
             <>
@@ -363,9 +346,7 @@ export function CryptoWithdrawalForm({
           )}
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground">
-          {t('withdrawalTerms')}
-        </p>
+        <p className="text-xs text-center text-muted-foreground">{t('withdrawalTerms')}</p>
       </form>
     </Form>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,6 @@ const depositSchema = z.object({
   amountInr: z.string()
     .min(1, 'amountRequired')
     .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'amountInvalid')
-    .refine((val) => parseFloat(val) >= 1000, 'minimumAmount')
     .refine((val) => parseFloat(val) <= 100000, 'maximumAmount'),
   currency: z.string().min(1, 'currencyRequired'),
 });
@@ -52,7 +51,7 @@ const currencyOptions = [
     networkImage: CRYPTO_IMAGES['ethereum-network']
   },
   { 
-    value: 'usdcerc20', 
+    value: 'usdc', 
     display: 'USDC ERC20', 
     tokenImage: CRYPTO_IMAGES['usd-coin-usdc'],
     networkImage: CRYPTO_IMAGES['ethereum-network']
@@ -85,7 +84,6 @@ const currencyOptions = [
   },
 ];
 
-
 export function CryptoDepositForm() {
   const t = useTranslations('Deposit');
   const { toast } = useToast();
@@ -94,6 +92,8 @@ export function CryptoDepositForm() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [minAmountInr, setMinAmountInr] = useState<number | null>(null);
+  const [isLoadingMin, setIsLoadingMin] = useState(false);
 
   const form = useForm<DepositFormValues>({
     resolver: zodResolver(depositSchema),
@@ -102,6 +102,43 @@ export function CryptoDepositForm() {
       currency: '',
     },
   });
+
+  const selectedCurrency = form.watch('currency');
+  const amountInrValue = form.watch('amountInr');
+
+  useEffect(() => {
+    if (!selectedCurrency) {
+      setMinAmountInr(null);
+      return;
+    }
+
+    const fetchMinAmount = async () => {
+      setIsLoadingMin(true);
+      try {
+        const response = await fetch(`/api/crypto/min-amount?currency=${selectedCurrency}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMinAmountInr(data.minAmountInr);
+          if (amountInrValue && parseFloat(amountInrValue) < data.minAmountInr) {
+            form.setError('amountInr', {
+              type: 'manual',
+              message: t('minimumAmount', { min: data.minAmountInr.toLocaleString('en-IN') })
+            });
+          } else if (amountInrValue) {
+            form.clearErrors('amountInr');
+          }
+        } else {
+          console.error('Failed to fetch minimum amount');
+        }
+      } catch (error) {
+        console.error('Error fetching minimum amount:', error);
+      } finally {
+        setIsLoadingMin(false);
+      }
+    };
+
+    fetchMinAmount();
+  }, [selectedCurrency, amountInrValue, form, t]);
 
   const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
@@ -116,13 +153,26 @@ export function CryptoDepositForm() {
 
   const onSubmit = async (data: DepositFormValues) => {
     setSubmitError(null);
+    const amount = parseFloat(data.amountInr);
+
+    if (minAmountInr && amount < minAmountInr) {
+      const errorMsg = t('minimumAmount', { min: minAmountInr.toLocaleString('en-IN') });
+      form.setError('amountInr', { type: 'manual', message: errorMsg });
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: errorMsg,
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/crypto/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amountInr: parseFloat(data.amountInr),
+          amountInr: amount,
           currency: data.currency,
         }),
       });
@@ -145,18 +195,14 @@ export function CryptoDepositForm() {
       setStep('payment');
     } catch (error) {
       console.error('Deposit error:', error);
-
       let errorMessage = t('contactSupport');
       if (error instanceof Error) {
         if (error.message.includes('Invalid currency') || error.message.includes('Currency not supported')) {
           errorMessage = t('currencyNotSupported');
         } else if (error.message.includes('Minimum deposit')) {
-          errorMessage = t('minimumAmount');
-        } else if (error.message.includes('Maximum deposit')) {
-          errorMessage = t('maximumAmount');
+          errorMessage = t('minimumAmount', { min: minAmountInr?.toLocaleString('en-IN') || '1,000' });
         }
       }
-
       setSubmitError(errorMessage);
       toast({
         variant: 'destructive',
@@ -182,33 +228,25 @@ export function CryptoDepositForm() {
     switch (currency.toLowerCase()) {
       case 'btc':
         return `bitcoin:${address}?amount=${amount}`;
-        
       case 'eth':
         const weiAmount = Math.floor(amount * 1e18);
         return `ethereum:${address}?value=${weiAmount}`;
-        
       case 'sol':
         return `solana:${address}?amount=${amount}`;
-        
       case 'trx':
         const sunAmount = Math.floor(amount * 1e6);
         return `tron:${address}?amount=${sunAmount}`;
-        
       case 'usdttrc20':
         const tronAmount = Math.floor(amount * 1e6);
         return `tron:${address}?value=${tronAmount}&req-asset=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
-        
       case 'usdterc20':
         const erc20Amount = Math.floor(amount * 1e6);
         return `ethereum:${address}?value=${erc20Amount}&req-asset=0xdac17f958d2ee523a2206206994597c13d831ec7`;
-        
       case 'usdcerc20':
         const usdcAmount = Math.floor(amount * 1e6);
         return `ethereum:${address}?value=${usdcAmount}&req-asset=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`;
-        
       case 'usdcsol':
         return `solana:${address}?amount=${amount}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`;
-        
       default:
         return address;
     }
@@ -273,7 +311,7 @@ export function CryptoDepositForm() {
           </Alert>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{t('expires')}: {new Date(paymentInfo.expiresAt).toLocaleString()}</span>
+            {/* <span>{t('expires')}: {new Date(paymentInfo.expiresAt).toLocaleString()}</span> */}
             <Button variant="outline" onClick={() => setStep('form')}>
               {t('newDeposit')}
             </Button>
@@ -287,45 +325,7 @@ export function CryptoDepositForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="amountInr"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {quickAmounts.map((amt) => (
-                    <Button
-                      key={amt}
-                      type="button"
-                      variant={field.value === amt.toString() ? 'default' : 'outline'}
-                      className="h-12"
-                      onClick={() => handleAmountSuggestion(amt)}
-                    >
-                      <IndianRupee className="h-4 w-4 mr-1" />
-                      {amt.toLocaleString('en-IN')}
-                    </Button>
-                  ))}
-                </div>
-                <div className="relative">
-                  <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t('enterAmount')}
-                    className="pl-10 h-12 text-lg"
-                    min={1000}
-                    max={100000}
-                    {...field}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {t('minAmount')}: ₹ 1,000 | {t('maxAmount')}: ₹ 1,00,000
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
+                    <FormField
             control={form.control}
             name="currency"
             render={({ field }) => (
@@ -349,7 +349,7 @@ export function CryptoDepositForm() {
                             height={40}
                             className="w-full h-full object-contain"
                             onError={() => handleImageError(option.value)}
-                            unoptimized // if images are from external domains
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-full bg-muted rounded-full flex items-center justify-center">
@@ -379,6 +379,47 @@ export function CryptoDepositForm() {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="amountInr"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {quickAmounts.map((amt) => (
+                    <Button
+                      key={amt}
+                      type="button"
+                      variant={field.value === amt.toString() ? 'default' : 'outline'}
+                      className="h-12"
+                      onClick={() => handleAmountSuggestion(amt)}
+                    >
+                      <IndianRupee className="h-4 w-4 mr-1" />
+                      {amt.toLocaleString('en-IN')}
+                    </Button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t('enterAmount')}
+                    className="pl-10 h-12 text-lg"
+                    // min={1000}
+                    max={100000}
+                    {...field}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {t('minAmount')}: {minAmountInr !== null ? `₹${minAmountInr.toLocaleString('en-IN')}` : '—'}
+                  {isLoadingMin && <span className="ml-2 text-xs">(updating...)</span>}
+                  {' | '}{t('maxAmount')}: ₹1,00,000
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
         </div>
 
         {submitError && (
@@ -391,7 +432,7 @@ export function CryptoDepositForm() {
         <Button
           type="submit"
           className="w-full h-12 text-lg font-semibold"
-          disabled={isLoading || !form.formState.isValid}
+          disabled={isLoading || !form.formState.isValid || (minAmountInr !== null && parseFloat(form.watch('amountInr') || '0') < minAmountInr)}
         >
           {isLoading ? (
             <>

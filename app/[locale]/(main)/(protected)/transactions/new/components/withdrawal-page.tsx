@@ -157,79 +157,79 @@ export function WithdrawalPage({
     );
   }
 
-  if (!userImage || !isImageApproved) {
-    if (userImage && userImageStatus === 'pending') {
-      return (
-      <div className="container max-w-2xl pb-[60px] lg:pb-0">
-        <Button onClick={() => router.back()} variant="ghost" className="lg:mb-6 mb-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('backToTransactions')}
-        </Button>
+  // if (!userImage || !isImageApproved) {
+  //   if (userImage && userImageStatus === 'pending') {
+  //     return (
+  //     <div className="container max-w-2xl pb-[60px] lg:pb-0">
+  //       <Button onClick={() => router.back()} variant="ghost" className="lg:mb-6 mb-2">
+  //         <ArrowLeft className="h-4 w-4 mr-2" />
+  //         {t('backToTransactions')}
+  //       </Button>
 
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-              <CardTitle className="text-2xl">{t('verificationInProgress')}</CardTitle>
-              <CardDescription className="text-lg">
-                {t('documentsUnderReview')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">
-                {t('approvalTime')}
-              </p>
-              <div className="flex items-center justify-center gap-2 text-sm text-yellow-600">
-                <Clock className="h-4 w-4" />
-                <span>{t('statusPending')}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
+  //         <Card>
+  //           <CardHeader className="text-center">
+  //             <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+  //               <Clock className="h-8 w-8 text-yellow-600" />
+  //             </div>
+  //             <CardTitle className="text-2xl">{t('verificationInProgress')}</CardTitle>
+  //             <CardDescription className="text-lg">
+  //               {t('documentsUnderReview')}
+  //             </CardDescription>
+  //           </CardHeader>
+  //           <CardContent className="text-center">
+  //             <p className="text-muted-foreground mb-6">
+  //               {t('approvalTime')}
+  //             </p>
+  //             <div className="flex items-center justify-center gap-2 text-sm text-yellow-600">
+  //               <Clock className="h-4 w-4" />
+  //               <span>{t('statusPending')}</span>
+  //             </div>
+  //           </CardContent>
+  //         </Card>
+  //       </div>
+  //     );
+  //   }
 
-    return (
-      <div className="container max-w-2xl pb-[60px] lg:pb-0">
-        <Button onClick={() => router.back()} variant="ghost" className="lg:mb-6 mb-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('backToTransactions')}
-        </Button>
+  //   return (
+  //     <div className="container max-w-2xl pb-[60px] lg:pb-0">
+  //       <Button onClick={() => router.back()} variant="ghost" className="lg:mb-6 mb-2">
+  //         <ArrowLeft className="h-4 w-4 mr-2" />
+  //         {t('backToTransactions')}
+  //       </Button>
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Upload className="h-8 w-8 text-blue-600" />
-            </div>
-            <CardTitle className="text-2xl">{t('verificationRequired')}</CardTitle>
-            <CardDescription className="text-lg">
-              {userImageStatus === 'rejected' 
-                ? t('verificationRejected') 
-                : t('verifyIdentityToWithdraw')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert variant={userImageStatus === 'rejected' ? 'destructive' : 'default'}>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {userImageStatus === 'rejected' 
-                  ? t('verificationRejectedInstructions')
-                  : t('verificationInstructions')}
-              </AlertDescription>
-            </Alert>
-            <div className="text-center flex justify-center">
-              <ImageUploadWrapper 
-                userImage={userImage} 
-                userId={userId} 
-                userImageStatus={userImageStatus}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  //       <Card>
+  //         <CardHeader className="text-center">
+  //           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+  //             <Upload className="h-8 w-8 text-blue-600" />
+  //           </div>
+  //           <CardTitle className="text-2xl">{t('verificationRequired')}</CardTitle>
+  //           <CardDescription className="text-lg">
+  //             {userImageStatus === 'rejected' 
+  //               ? t('verificationRejected') 
+  //               : t('verifyIdentityToWithdraw')}
+  //           </CardDescription>
+  //         </CardHeader>
+  //         <CardContent className="space-y-6">
+  //           <Alert variant={userImageStatus === 'rejected' ? 'destructive' : 'default'}>
+  //             <AlertCircle className="h-4 w-4" />
+  //             <AlertDescription>
+  //               {userImageStatus === 'rejected' 
+  //                 ? t('verificationRejectedInstructions')
+  //                 : t('verificationInstructions')}
+  //             </AlertDescription>
+  //           </Alert>
+  //           <div className="text-center flex justify-center">
+  //             <ImageUploadWrapper 
+  //               userImage={userImage} 
+  //               userId={userId} 
+  //               userImageStatus={userImageStatus}
+  //             />
+  //           </div>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="container max-w-2xl pb-[60px] lg:pb-0 px-1">
