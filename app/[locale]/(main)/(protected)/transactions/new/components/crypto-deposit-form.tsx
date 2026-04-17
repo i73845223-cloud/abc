@@ -109,6 +109,7 @@ export function CryptoDepositForm() {
   useEffect(() => {
     if (!selectedCurrency) {
       setMinAmountInr(null);
+      form.clearErrors('amountInr');
       return;
     }
 
@@ -119,13 +120,17 @@ export function CryptoDepositForm() {
         if (response.ok) {
           const data = await response.json();
           setMinAmountInr(data.minAmountInr);
-          if (amountInrValue && parseFloat(amountInrValue) < data.minAmountInr) {
-            form.setError('amountInr', {
-              type: 'manual',
-              message: t('minimumAmount', { min: data.minAmountInr.toLocaleString('en-IN') })
-            });
-          } else if (amountInrValue) {
-            form.clearErrors('amountInr');
+          
+          const currentAmount = parseFloat(amountInrValue || '0');
+          if (amountInrValue && !isNaN(currentAmount) && currentAmount > 0) {
+            if (currentAmount < data.minAmountInr) {
+              form.setError('amountInr', {
+                type: 'manual',
+                message: t('minimumAmount', { min: data.minValue.toLocaleString('en-IN') })
+              });
+            } else {
+              form.clearErrors('amountInr');
+            }
           }
         } else {
           console.error('Failed to fetch minimum amount');
@@ -143,7 +148,7 @@ export function CryptoDepositForm() {
   const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
   const handleAmountSuggestion = (amount: number) => {
-    form.setValue('amountInr', amount.toString());
+    form.setValue('amountInr', amount.toString(), { shouldValidate: true });
     form.trigger('amountInr');
   };
 
@@ -200,7 +205,8 @@ export function CryptoDepositForm() {
         if (error.message.includes('Invalid currency') || error.message.includes('Currency not supported')) {
           errorMessage = t('currencyNotSupported');
         } else if (error.message.includes('Minimum deposit')) {
-          errorMessage = t('minimumAmount', { min: minAmountInr?.toLocaleString('en-IN') || '1,000' });
+          const minValue = minAmountInr || 1000;
+          errorMessage = t('minimumAmount', { min: minValue.toLocaleString('en-IN') });
         }
       }
       setSubmitError(errorMessage);
@@ -209,7 +215,8 @@ export function CryptoDepositForm() {
         title: t('error'),
         description: errorMessage,
       });
-    } finally {
+    }
+    finally {
       setIsLoading(false);
     }
   };
@@ -250,6 +257,19 @@ export function CryptoDepositForm() {
       default:
         return address;
     }
+  };
+
+  const isButtonEnabled = () => {
+    if (!form.formState.isValid) return false;
+    
+    if (selectedCurrency && isLoadingMin) return false;
+    
+    if (selectedCurrency && minAmountInr !== null) {
+      const amount = parseFloat(amountInrValue || '0');
+      if (isNaN(amount) || amount < minAmountInr) return false;
+    }
+    
+    return true;
   };
 
   if (step === 'payment' && paymentInfo) {
@@ -325,7 +345,7 @@ export function CryptoDepositForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
-                    <FormField
+          <FormField
             control={form.control}
             name="currency"
             render={({ field }) => (
@@ -405,7 +425,6 @@ export function CryptoDepositForm() {
                   <Input
                     placeholder={t('enterAmount')}
                     className="pl-10 h-12 text-lg"
-                    // min={1000}
                     max={100000}
                     {...field}
                   />
@@ -419,7 +438,6 @@ export function CryptoDepositForm() {
               </FormItem>
             )}
           />
-
         </div>
 
         {submitError && (
@@ -432,7 +450,7 @@ export function CryptoDepositForm() {
         <Button
           type="submit"
           className="w-full h-12 text-lg font-semibold"
-          disabled={isLoading || !form.formState.isValid || (minAmountInr !== null && parseFloat(form.watch('amountInr') || '0') < minAmountInr)}
+          disabled={isLoading || !isButtonEnabled()}
         >
           {isLoading ? (
             <>

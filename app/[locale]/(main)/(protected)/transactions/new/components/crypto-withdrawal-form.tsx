@@ -64,6 +64,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
   useEffect(() => {
     if (!selectedCurrency) {
       setDynamicMinInr(null);
+      form.clearErrors('amountInr');
       return;
     }
     const fetchMinAmount = async () => {
@@ -85,21 +86,32 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
       }
     };
     fetchMinAmount();
-  }, [selectedCurrency, fallbackMinimum]);
+  }, [selectedCurrency, fallbackMinimum, form]);
 
   useEffect(() => {
     const amount = parseFloat(amountInr);
-    if (isNaN(amount) || amountInr === '') {
+    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    
+    if (!amountInr || isNaN(amount)) {
       form.clearErrors('amountInr');
       return;
     }
-    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    
     if (amount < effectiveMin) {
-      form.setError('amountInr', { type: 'manual', message: t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') }) });
+      form.setError('amountInr', { 
+        type: 'manual', 
+        message: t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') }) 
+      });
     } else if (amount > MAX_WITHDRAWAL) {
-      form.setError('amountInr', { type: 'manual', message: t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') }) });
+      form.setError('amountInr', { 
+        type: 'manual', 
+        message: t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') }) 
+      });
     } else if (amount > userBalance) {
-      form.setError('amountInr', { type: 'manual', message: t('insufficientBalance') });
+      form.setError('amountInr', { 
+        type: 'manual', 
+        message: t('insufficientBalance') 
+      });
     } else {
       form.clearErrors('amountInr');
     }
@@ -110,8 +122,8 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
     const effectiveMin = dynamicMinInr ?? fallbackMinimum;
     let finalAmount = Math.max(suggestedAmount, effectiveMin);
     if (finalAmount > MAX_WITHDRAWAL) finalAmount = MAX_WITHDRAWAL;
-    form.setValue('amountInr', finalAmount.toFixed(2));
-    form.trigger('amountInr');
+    finalAmount = Math.round(finalAmount * 100) / 100;
+    form.setValue('amountInr', finalAmount.toString(), { shouldValidate: true });
   };
 
   const handleImageError = (optionValue: string, isNetwork = false) => {
@@ -123,6 +135,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
     setSubmitError(null);
     const amount = parseFloat(data.amountInr);
     const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    
     if (amount > userBalance) {
       const errorMsg = t('insufficientBalance');
       setSubmitError(errorMsg);
@@ -149,17 +162,29 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amountInr: amount, currency: data.currency, address: data.address }),
       });
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
       const result = await response.json();
       setTransactionId(result.withdrawalId);
       setSuccess(true);
       form.reset();
     } catch (error) {
       console.error('Withdrawal error:', error);
-      const errorMessage = error instanceof Error && error.message.includes('Insufficient funds') ? t('insufficientBalance') : t('contactSupport');
+      let errorMessage = t('contactSupport');
+      if (error instanceof Error) {
+        if (error.message.includes('Insufficient funds')) {
+          errorMessage = t('insufficientBalance');
+        } else if (error.message.includes('Minimum withdrawal')) {
+          const minValue = effectiveMinimum;
+          errorMessage = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') });
+        }
+      }
       setSubmitError(errorMessage);
       toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-    } finally {
+    }
+     finally {
       setIsSubmitting(false);
     }
   };
@@ -186,7 +211,19 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
   }
 
   const effectiveMinimum = dynamicMinInr ?? fallbackMinimum;
-  const isButtonDisabled = isSubmitting || isLoadingMin || !form.formState.isValid;
+  
+  const isButtonEnabled = () => {
+    if (!selectedCurrency) return false;
+    if (isSubmitting) return false;
+    if (isLoadingMin) return false;
+    if (!form.formState.isValid) return false;
+    const amount = parseFloat(amountInr);
+    if (isNaN(amount) || amount <= 0) return false;
+    if (amount < effectiveMinimum) return false;
+    if (amount > MAX_WITHDRAWAL) return false;
+    if (amount > userBalance) return false;
+    return true;
+  };
 
   return (
     <Form {...form}>
@@ -207,60 +244,59 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
           </CardContent>
         </Card>
 
-                  <FormField
-            control={form.control}
-            name="currency"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-lg font-semibold">{t('cryptoCurrency')}</FormLabel>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {currencyOptions.map(option => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={field.value === option.value ? 'default' : 'outline'}
-                      className="h-auto py-3 flex flex-col items-center gap-1 px-2"
-                      onClick={() => field.onChange(option.value)}
-                    >
-                      <div className="relative w-10 h-10">
-                        {option.tokenImage && !imageErrors[option.value] ? (
+        <FormField
+          control={form.control}
+          name="currency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg font-semibold">{t('cryptoCurrency')}</FormLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {currencyOptions.map(option => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={field.value === option.value ? 'default' : 'outline'}
+                    className="h-auto py-3 flex flex-col items-center gap-1 px-2"
+                    onClick={() => field.onChange(option.value)}
+                  >
+                    <div className="relative w-10 h-10">
+                      {option.tokenImage && !imageErrors[option.value] ? (
+                        <Image
+                          src={option.tokenImage}
+                          alt={option.display}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-contain"
+                          onError={() => handleImageError(option.value)}
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-full flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">?</span>
+                        </div>
+                      )}
+                      {option.networkImage && !imageErrors[`${option.value}-network`] && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
                           <Image
-                            src={option.tokenImage}
-                            alt={option.display}
-                            width={40}
-                            height={40}
-                            className="w-full h-full object-contain"
-                            onError={() => handleImageError(option.value)}
+                            src={option.networkImage}
+                            alt="network"
+                            width={20}
+                            height={20}
+                            className="w-full h-full object-contain bg-white rounded-full p-0.5"
+                            onError={() => handleImageError(option.value, true)}
                             unoptimized
                           />
-                        ) : (
-                          <div className="w-full h-full bg-muted rounded-full flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">?</span>
-                          </div>
-                        )}
-                        {option.networkImage && !imageErrors[`${option.value}-network`] && (
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-background rounded-full border border-border">
-                            <Image
-                              src={option.networkImage}
-                              alt="network"
-                              width={20}
-                              height={20}
-                              className="w-full h-full object-contain bg-white rounded-full p-0.5"
-                              onError={() => handleImageError(option.value, true)}
-                              unoptimized
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs font-medium">{option.display}</span>
-                    </Button>
-                  ))}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium">{option.display}</span>
+                  </Button>
+                ))}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="space-y-4">
           <FormField
@@ -306,7 +342,6 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
             )}
           />
 
-
           <FormField
             control={form.control}
             name="address"
@@ -333,7 +368,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
         <Button
           type="submit"
           className="w-full h-12 text-lg font-semibold"
-          disabled={isButtonDisabled}
+          disabled={!isButtonEnabled()}
         >
           {isSubmitting ? (
             <>
