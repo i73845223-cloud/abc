@@ -54,6 +54,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ minAmountInr: minInr });
   } catch (error) {
     console.error('[MIN_AMOUNT]', error);
-    return NextResponse.json({ minAmountInr: 500 });
   }
 }
