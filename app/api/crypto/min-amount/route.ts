@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
+const NOWPAYMENTS_API_KEY = 'K4VRA2D-4B7MKKE-HDFMQYS-59QXM5M';
 const BASE_URL = 'https://api.nowpayments.io/v1';
 const INR_PER_USD = parseFloat(process.env.INR_PER_USD || '100');
 
