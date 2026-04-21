@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { BalanceCache } from '@/lib/cached-balance';
-import { updateBonusWagering } from '@/lib/bonus-wagering'; // 👈 Add this import
+import { updateBonusWagering } from '@/lib/bonus-wagering';
 
 export async function POST(request: Request) {
   let userId: string | null = null;
@@ -30,8 +30,25 @@ export async function POST(request: Request) {
       return new NextResponse("Insufficient funds", { status: 400 });
     }
 
+    const userPromo = await db.userPromoCode.findFirst({
+      where: { userId },
+      include: {
+        promoCode: {
+          include: { assignedUser: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const promoCode = userPromo?.promoCode;
+    const shouldAwardCommission =
+      promoCode?.assignedUserId &&
+      promoCode.assignedUser &&
+      promoCode.commissionPercentage &&
+      promoCode.commissionPercentage > 0;
+
     const result = await db.$transaction(async (tx) => {
-      await tx.transaction.create({
+      const betTransaction = await tx.transaction.create({
         data: {
           userId: userId!,
           amount: betAmount,
@@ -53,6 +70,36 @@ export async function POST(request: Request) {
             status: 'success'
           }
         });
+      }
+
+      if (shouldAwardCommission) {
+        const commissionAmount = betAmount * (promoCode.commissionPercentage! / 100);
+
+        await tx.influencerEarning.create({
+          data: {
+            amount: commissionAmount,
+            description: `${promoCode.commissionPercentage}% commission from slots bet via ${promoCode.code}`,
+            type: 'WITHDRAWAL_COMMISSION',
+            influencerId: promoCode.assignedUserId!,
+            sourceUserId: userId!,
+            withdrawalId: betTransaction.id,
+            promoCodeId: promoCode.id
+          }
+        });
+
+        await tx.transaction.create({
+          data: {
+            userId: promoCode.assignedUserId!,
+            amount: commissionAmount,
+            type: 'deposit',
+            status: 'success',
+            description: `Commission from slots bet via ${promoCode.code}`,
+            category: 'commission'
+          }
+        });
+
+        const influencerBalanceCache = BalanceCache.getInstance();
+        await influencerBalanceCache.invalidateCache(promoCode.assignedUserId!);
       }
 
       await balanceCache.updateBalance(userId!, betAmount, 'withdrawal');
