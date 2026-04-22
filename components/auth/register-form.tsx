@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 import { RegisterSchema } from "@/schemas";
 import { CardWrapper } from "./card-wrapper";
@@ -22,6 +23,7 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
+  const t = useTranslations("RegisterForm"); // <-- Initialize translations
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
@@ -57,7 +59,7 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
       });
 
       if (signInResult?.error) {
-        setError("Account created but login failed. Please try logging in manually.");
+        setError(t("accountCreatedLoginFailed"));
         return;
       }
 
@@ -68,8 +70,8 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
 
   return (
     <CardWrapper
-      headerLabel="Create an account"
-      backButtonLabel="Already have an account?"
+      headerLabel={t("headerLabel")}
+      backButtonLabel={t("backButtonLabel")}
       backButtonHref="/login"
     >
       <Form {...form}>
@@ -80,13 +82,14 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("emailLabel")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       disabled={isPending}
-                      placeholder="john.doe@example.com"
+                      placeholder={t("emailPlaceholder")}
                       type="email"
+                      maxLength={256}
                     />
                   </FormControl>
                   <FormMessage />
@@ -98,13 +101,14 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t("passwordLabel")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       disabled={isPending}
-                      placeholder="******"
+                      placeholder={t("passwordPlaceholder")}
                       type="password"
+                      maxLength={256}
                     />
                   </FormControl>
                   <FormMessage />
@@ -115,7 +119,7 @@ export const RegisterForm = ({ refCode, callbackUrl }: RegisterFormProps) => {
           <FormError message={error} />
           <FormSuccess message={success} />
           <Button disabled={isPending} type="submit" className="w-full">
-            Register
+            {t("submitButton")}
           </Button>
         </form>
       </Form>

@@ -612,5 +612,30 @@
     "history": "इतिहास",
     "copyright": "alt.win © {year}",
     "responsibleGaming": "जुआ लत लगा सकता है। जिम्मेदारी से खेलें।"
+  },
+  "RegisterForm": {
+    "headerLabel": "खाता बनाएं",
+    "backButtonLabel": "पहले से खाता है?",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "john.doe@example.com",
+    "passwordLabel": "पासवर्ड",
+    "passwordPlaceholder": "******",
+    "submitButton": "रजिस्टर करें",
+    "accountCreatedLoginFailed": "खाता बन गया लेकिन लॉगिन विफल। कृपया मैन्युअली लॉगिन करें।"
+  },
+  "LoginForm": {
+    "headerLabel": "लॉग इन करें",
+    "backButtonLabel": "खाता नहीं है?",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "john.doe@example.com",
+    "passwordLabel": "पासवर्ड",
+    "passwordPlaceholder": "******",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "twoFactorCodeLabel": "टू-फैक्टर कोड",
+    "twoFactorCodePlaceholder": "123456",
+    "confirmButton": "पुष्टि करें",
+    "loginButton": "लॉग इन करें",
+    "oauthAccountNotLinkedError": "ईमेल पहले से ही किसी अन्य प्रदाता के साथ उपयोग में है!",
+    "somethingWentWrong": "कुछ गलत हो गया"
   }
 }

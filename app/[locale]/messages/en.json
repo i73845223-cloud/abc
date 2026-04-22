@@ -613,5 +613,30 @@
     "history": "History",
     "copyright": "alt.win © {year}",
     "responsibleGaming": "Gambling can be addictive. Play responsibly."
+  },
+  "RegisterForm": {
+    "headerLabel": "Create an account",
+    "backButtonLabel": "Already have an account?",
+    "emailLabel": "Email",
+    "emailPlaceholder": "john.doe@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "******",
+    "submitButton": "Register",
+    "accountCreatedLoginFailed": "Account created but login failed. Please try logging in manually."
+  },
+  "LoginForm": {
+    "headerLabel": "Log In",
+    "backButtonLabel": "Don't have an account?",
+    "emailLabel": "Email",
+    "emailPlaceholder": "john.doe@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "******",
+    "forgotPassword": "Forgot password?",
+    "twoFactorCodeLabel": "Two Factor Code",
+    "twoFactorCodePlaceholder": "123456",
+    "confirmButton": "Confirm",
+    "loginButton": "Login",
+    "oauthAccountNotLinkedError": "Email already in use with different provider!",
+    "somethingWentWrong": "Something went wrong"
   }
 }
