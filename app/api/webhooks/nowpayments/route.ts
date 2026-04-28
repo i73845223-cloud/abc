@@ -115,17 +115,17 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
         },
       });
 
-      await tx.transaction.create({
-        data: {
-          userId,
-          type: 'deposit',
-          amount: bonusAmount,
-          status: 'success',
-          description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
-          category: 'bonus',
-          bonusId: bonus.id,
-        },
-      });
+      // await tx.transaction.create({
+      //   data: {
+      //     userId,
+      //     type: 'deposit',
+      //     amount: bonusAmount,
+      //     status: 'success',
+      //     description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
+      //     category: 'bonus',
+      //     bonusId: bonus.id,
+      //   },
+      // });
     }
   }
 }

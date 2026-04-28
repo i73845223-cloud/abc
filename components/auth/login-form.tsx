@@ -6,7 +6,7 @@ import { CardWrapper } from "./card-wrapper";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl'; // <-- Import hook
+import { useTranslations } from 'next-intl';
 
 import { LoginSchema } from '@/schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -23,7 +23,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ refCode, callbackUrl: propCallbackUrl }: LoginFormProps) => {
-  const t = useTranslations('LoginForm'); // <-- Initialize translations
+  const t = useTranslations('LoginForm');
   const searchParams = useSearchParams();
   const urlCallbackUrl = searchParams.get('callbackUrl');
   const urlRef = searchParams.get('ref');

@@ -155,7 +155,6 @@ function MatchCard({ book, onOutcomeClick, isUserLoggedIn }: MatchCardProps) {
     return name.length > 3 ? name.slice(0, 3) : name
   }
 
-  // Get outcomes and sort by order
   const outcomes = firstEvent?.outcomes || []
   const sortedOutcomes = [...outcomes].sort((a, b) => a.order - b.order)
   const gridCols = sortedOutcomes.length === 2 ? 'grid-cols-2' : sortedOutcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1'
