@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import createIntlMiddleware from 'next-intl/middleware';
 import authConfig from "./auth.config"
-import { DEFAULT_LOGIN_REDIRECT, apiAuthPrefix, authRoutes, bookRoute, publicRoutes, demoRoute } from "./routes"
+import { DEFAULT_LOGIN_REDIRECT, apiAuthPrefix, authRoutes, bookRoute, publicRoutes, demoRoute, enBookRoute } from "./routes"
 import { NextResponse } from "next/server";
 
 const intlMiddleware = createIntlMiddleware({
@@ -36,6 +36,7 @@ export default auth((req) => {
   const isApiRoute = nextUrl.pathname.startsWith('/api')
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix)
   const isBookRoute = nextUrl.pathname.startsWith(bookRoute)
+  const isEnBookRoute = nextUrl.pathname.startsWith(enBookRoute)
   const isDemoRoute = nextUrl.pathname.includes(demoRoute)
   
   const pathnameWithoutLocale = nextUrl.pathname.replace(/^\/(en|hi)/, '') || '/'
@@ -53,7 +54,7 @@ export default auth((req) => {
     } else {
       response = intlMiddleware(req)
     }
-  } else if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isDemoRoute && !isBookRoute) {
+  } else if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isDemoRoute && !isBookRoute && !isEnBookRoute) {
     let callbackUrl = nextUrl.pathname
     if (nextUrl.search) {
       callbackUrl += nextUrl.search

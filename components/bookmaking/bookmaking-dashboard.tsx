@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Book } from '@/app/types/bookmaking';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -66,7 +66,8 @@ interface PaginationInfo {
 
 interface ClientBookmakingDashboardProps {
   initialBooks: Book[];
-  // initialPagination: PaginationInfo;
+  // initialCategories MUST contain ALL categories that have upcoming books GLOBALLY,
+  // not just the ones for the current filter/category page.
   initialCategories: string[];
   initialChampionships: string[];
   categoryParam?: string;
@@ -83,7 +84,7 @@ const CATEGORY_ORDER = [
   'tennis',
   'table-tennis',
   'horse-racing',
-  'e-sports',
+  'esports',
   'kabaddi',
   'badminton',
   'volleyball',
@@ -99,7 +100,7 @@ const categoryIconMap: Record<string, string> = {
   tennis: SPORT_ICONS.tennis,
   'table-tennis': SPORT_ICONS.tabletennis,
   'horse-racing': SPORT_ICONS.horse,
-  'e-sports': SPORT_ICONS.gaming,
+  esports: SPORT_ICONS.gaming,
   kabaddi: SPORT_ICONS.kabaddi,
   badminton: SPORT_ICONS.badminton,
   volleyball: SPORT_ICONS.volleyball,
@@ -110,7 +111,6 @@ const categoryIconMap: Record<string, string> = {
 
 export default function ClientBookmakingDashboard({
   initialBooks,
-  // initialPagination,
   initialCategories,
   initialChampionships,
   categoryParam,
@@ -211,48 +211,18 @@ export default function ClientBookmakingDashboard({
     return category.toLowerCase();
   };
 
-  const handleFilterChange = (filter: FilterType) => {
-    setActiveFilter(filter);
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setActiveFilter('all');
-  };
-
-  const handlePageChange = (newPage: number) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('page', newPage.toString());
-    router.push(url.toString());
-  };
-
-  const scrollQuickLinks = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const scrollAmount = container.clientWidth * 0.8;
-      container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
-  };
-
   const books = initialBooks || [];
-  const categories = initialCategories || [];
-  // const pagination = initialPagination || {
-  //   currentPage: 1,
-  //   totalPages: 0,
-  //   hasNext: false,
-  //   hasPrev: false,
-  // };
+
+  // Global categories that have events (from initialCategories, sorted)
+  const globalCategoriesSorted = useMemo(() => {
+    const cats = initialCategories
+      .map((c) => c.toLowerCase())
+      .filter((c) => CATEGORY_ORDER.includes(c));
+    return cats.sort((a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b));
+  }, [initialCategories]);
 
   const hasHotEvents = books.some((book) => book.isHotEvent);
   const hasNationalEvents = books.some((book) => book.isNationalSport);
-  const currentCategoryDisplay = categoryParam ? formatCategoryForDisplay(categoryParam) : t('allSports');
   const hasActiveSearchOrFilter = Boolean(searchQuery || activeFilter !== 'all');
   const isMainPage = !categoryParam;
   const showAccordionView = activeFilter === 'all' && !searchQuery;
@@ -274,7 +244,6 @@ export default function ClientBookmakingDashboard({
 
   const getGroupedData = () => {
     if (isMainPage) {
-      // Main page: group by category, then by championship
       const groupedByCategory: Record<
         string,
         {
@@ -302,7 +271,6 @@ export default function ClientBookmakingDashboard({
       const result = sortedCategories.map((cat) => {
         const catData = groupedByCategory[cat];
 
-        // Determine which championships have hot events
         const championshipHasHot = Object.entries(catData.championships).reduce(
           (acc, [champ, champBooks]) => {
             acc[champ] = champBooks.some((b) => b.isHotEvent);
@@ -334,7 +302,8 @@ export default function ClientBookmakingDashboard({
       const withoutChampionship: Book[] = [];
       filteredBooks.forEach((book) => {
         if (book.championship) {
-          if (!withChampionship[book.championship]) withChampionship[book.championship] = [];
+          if (!withChampionship[book.championship])
+            withChampionship[book.championship] = [];
           withChampionship[book.championship].push(book);
         } else {
           withoutChampionship.push(book);
@@ -378,255 +347,256 @@ export default function ClientBookmakingDashboard({
           type="text"
           placeholder={t('searchPlaceholder')}
           value={searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8 pr-2"
         />
       </div>
 
-      {initialCategories.length > 0 && (
-        <div className="mt-3 mb-1 sm:mt-6 sm:mb-3 px-1">
-          <div className="relative hidden sm:block">
-            <Carousel
-              opts={{
-                align: 'start',
-                loop: false,
-              }}
-              className="w-full group/carousel"
-            >
-              <CarouselContent className="-ml-2">
-                <CarouselItem className="pl-2 basis-auto">
-                  <Link
-                    href="/book"
-                    className="flex flex-col items-center gap-1 min-w-[72px] group"
+      {/* Quick links – always show the same global sports list */}
+      <div className="mt-3 mb-1 sm:mt-6 sm:mb-3 px-1">
+        <div className="relative hidden sm:block">
+          <Carousel
+            opts={{
+              align: 'start',
+              loop: false,
+            }}
+            className="w-full group/carousel"
+          >
+            <CarouselContent className="-ml-2">
+              {/* All Sports */}
+              <CarouselItem className="pl-2 basis-auto">
+                <Link
+                  href="/book"
+                  className="flex flex-col items-center gap-1 min-w-[72px] group"
+                >
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                      !categoryParam && activeFilter === 'all'
+                        ? 'border-primary border-2'
+                        : 'border-gray-500 border'
+                    }`}
                   >
-                    <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                        !categoryParam && activeFilter === 'all'
-                          ? 'border-primary border-2'
-                          : 'border-gray-500 border'
-                      }`}
-                    >
-                      {fireIcon ? (
-                        <Image
-                          src={fireIcon}
-                          alt={t('allSports')}
-                          width={32}
-                          height={32}
-                          className="object-contain transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <Flame className="h-8 w-8 text-orange-500" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs sm:text-sm font-medium text-center ${
-                        !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
-                      }`}
-                    >
-                      {t('allSports')}
-                    </span>
-                  </Link>
-                </CarouselItem>
-
-                <CarouselItem className="pl-2 basis-auto">
-                  <Link
-                    href="/book?filter=national"
-                    className="flex flex-col items-center gap-1 min-w-[72px] group"
+                    {fireIcon ? (
+                      <Image
+                        src={fireIcon}
+                        alt={t('allSports')}
+                        width={32}
+                        height={32}
+                        className="object-contain transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <Flame className="h-8 w-8 text-orange-500" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs sm:text-sm font-medium text-center ${
+                      !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
+                    }`}
                   >
-                    <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                        !categoryParam && activeFilter === 'national'
-                          ? 'border-primary border-2'
-                          : 'border-gray-500 border'
-                      }`}
-                    >
-                      {nationalIcon ? (
-                        <Image
-                          src={nationalIcon}
-                          alt={t('national')}
-                          width={32}
-                          height={32}
-                          className="object-contain transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <Globe className="h-8 w-8 text-blue-500" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs sm:text-sm font-medium text-center ${
-                        !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
-                      }`}
-                    >
-                      {t('national')}
-                    </span>
-                  </Link>
-                </CarouselItem>
+                    {t('allSports')}
+                  </span>
+                </Link>
+              </CarouselItem>
 
-                {initialCategories.map((categorySlug) => {
-                  const normalizedSlug = categorySlug.toLowerCase();
-                  const icon = categoryIconMap[normalizedSlug];
-                  const displayName = formatCategoryForDisplay(categorySlug);
-                  const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
-                  const isActive = categoryParam?.toLowerCase() === normalizedSlug;
-
-                  return (
-                    <CarouselItem key={categorySlug} className="pl-2 basis-auto">
-                      <Link
-                        href={href}
-                        className="flex flex-col items-center gap-1 min-w-[72px] group"
-                      >
-                        <div
-                          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                            isActive
-                              ? 'border-primary border-2'
-                              : 'border-gray-500 border'
-                          }`}
-                        >
-                          {icon ? (
-                            <Image
-                              src={icon}
-                              alt={displayName}
-                              width={32}
-                              height={32}
-                              className="object-contain transition-transform group-hover:scale-105"
-                            />
-                          ) : (
-                            <Trophy className="h-8 w-8 text-white" />
-                          )}
-                        </div>
-                        <span
-                          className={`text-xs sm:text-sm font-medium text-center ${
-                            isActive ? 'text-primary' : ''
-                          }`}
-                        >
-                          {displayName}
-                        </span>
-                      </Link>
-                    </CarouselItem>
-                  );
-                })}
-              </CarouselContent>
-
-              <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
-              <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
-            </Carousel>
-          </div>
-
-          <div className="relative sm:hidden">
-            <div
-              ref={scrollContainerRef}
-              className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
-            >
-              <Link
-                href="/book"
-                className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
-              >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    !categoryParam && activeFilter === 'all'
-                      ? 'border-primary border-2'
-                      : 'border-gray-500 border'
-                  }`}
+              {/* National */}
+              <CarouselItem className="pl-2 basis-auto">
+                <Link
+                  href="/book?filter=national"
+                  className="flex flex-col items-center gap-1 min-w-[72px] group"
                 >
-                  {fireIcon ? (
-                    <Image
-                      src={fireIcon}
-                      alt={t('allSports')}
-                      width={24}
-                      height={24}
-                      className="object-contain transition-transform group-hover:scale-105"
-                    />
-                  ) : (
-                    <Flame className="h-6 w-6 text-orange-500" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs font-medium text-center ${
-                    !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
-                  }`}
-                >
-                  {t('allSports')}
-                </span>
-              </Link>
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                      !categoryParam && activeFilter === 'national'
+                        ? 'border-primary border-2'
+                        : 'border-gray-500 border'
+                    }`}
+                  >
+                    {nationalIcon ? (
+                      <Image
+                        src={nationalIcon}
+                        alt={t('national')}
+                        width={32}
+                        height={32}
+                        className="object-contain transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <Globe className="h-8 w-8 text-blue-500" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs sm:text-sm font-medium text-center ${
+                      !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
+                    }`}
+                  >
+                    {t('national')}
+                  </span>
+                </Link>
+              </CarouselItem>
 
-              <Link
-                href="/book?filter=national"
-                className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
-              >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    !categoryParam && activeFilter === 'national'
-                      ? 'border-primary border-2'
-                      : 'border-gray-500 border'
-                  }`}
-                >
-                  {nationalIcon ? (
-                    <Image
-                      src={nationalIcon}
-                      alt={t('national')}
-                      width={24}
-                      height={24}
-                      className="object-contain transition-transform group-hover:scale-105"
-                    />
-                  ) : (
-                    <Globe className="h-6 w-6 text-blue-500" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs font-medium text-center ${
-                    !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
-                  }`}
-                >
-                  {t('national')}
-                </span>
-              </Link>
-
-              {initialCategories.map((categorySlug) => {
-                const normalizedSlug = categorySlug.toLowerCase();
-                const icon = categoryIconMap[normalizedSlug];
+              {/* All global sports that have events */}
+              {globalCategoriesSorted.map((categorySlug) => {
+                const icon = categoryIconMap[categorySlug];
                 const displayName = formatCategoryForDisplay(categorySlug);
                 const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
-                const isActive = categoryParam?.toLowerCase() === normalizedSlug;
+                const isActive = categoryParam?.toLowerCase() === categorySlug;
 
                 return (
-                  <Link
-                    key={categorySlug}
-                    href={href}
-                    className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
-                  >
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                        isActive
-                          ? 'border-primary border-2'
-                          : 'border-gray-500 border'
-                      }`}
+                  <CarouselItem key={categorySlug} className="pl-2 basis-auto">
+                    <Link
+                      href={href}
+                      className="flex flex-col items-center gap-1 min-w-[72px] group"
                     >
-                      {icon ? (
-                        <Image
-                          src={icon}
-                          alt={displayName}
-                          width={24}
-                          height={24}
-                          className="object-contain transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <Trophy className="h-6 w-6 text-white" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs font-medium text-center ${
-                        isActive ? 'text-primary' : ''
-                      }`}
-                    >
-                      {displayName}
-                    </span>
-                  </Link>
+                      <div
+                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                          isActive
+                            ? 'border-primary border-2'
+                            : 'border-gray-500 border'
+                        }`}
+                      >
+                        {icon ? (
+                          <Image
+                            src={icon}
+                            alt={displayName}
+                            width={32}
+                            height={32}
+                            className="object-contain transition-transform group-hover:scale-105"
+                          />
+                        ) : (
+                          <Trophy className="h-8 w-8 text-white" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs sm:text-sm font-medium text-center ${
+                          isActive ? 'text-primary' : ''
+                        }`}
+                      >
+                        {displayName}
+                      </span>
+                    </Link>
+                  </CarouselItem>
                 );
               })}
-            </div>
+            </CarouselContent>
+
+            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
+            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:disabled:opacity-0 transition-opacity duration-200 z-10 bg-background/80 backdrop-blur-sm border-2 disabled:opacity-0 h-8 w-8" />
+          </Carousel>
+        </div>
+
+        {/* Mobile scrollable quick links */}
+        <div className="relative sm:hidden">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth pb-2"
+          >
+            <Link
+              href="/book"
+              className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
+            >
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                  !categoryParam && activeFilter === 'all'
+                    ? 'border-primary border-2'
+                    : 'border-gray-500 border'
+                }`}
+              >
+                {fireIcon ? (
+                  <Image
+                    src={fireIcon}
+                    alt={t('allSports')}
+                    width={24}
+                    height={24}
+                    className="object-contain transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <Flame className="h-6 w-6 text-orange-500" />
+                )}
+              </div>
+              <span
+                className={`text-xs font-medium text-center ${
+                  !categoryParam && activeFilter === 'all' ? 'text-primary' : ''
+                }`}
+              >
+                {t('allSports')}
+              </span>
+            </Link>
+
+            <Link
+              href="/book?filter=national"
+              className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
+            >
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                  !categoryParam && activeFilter === 'national'
+                    ? 'border-primary border-2'
+                    : 'border-gray-500 border'
+                }`}
+              >
+                {nationalIcon ? (
+                  <Image
+                    src={nationalIcon}
+                    alt={t('national')}
+                    width={24}
+                    height={24}
+                    className="object-contain transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <Globe className="h-6 w-6 text-blue-500" />
+                )}
+              </div>
+              <span
+                className={`text-xs font-medium text-center ${
+                  !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
+                }`}
+              >
+                {t('national')}
+              </span>
+            </Link>
+
+            {globalCategoriesSorted.map((categorySlug) => {
+              const icon = categoryIconMap[categorySlug];
+              const displayName = formatCategoryForDisplay(categorySlug);
+              const href = `/book/category/${formatCategoryForURL(categorySlug)}`;
+              const isActive = categoryParam?.toLowerCase() === categorySlug;
+
+              return (
+                <Link
+                  key={categorySlug}
+                  href={href}
+                  className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      isActive
+                        ? 'border-primary border-2'
+                        : 'border-gray-500 border'
+                    }`}
+                  >
+                    {icon ? (
+                      <Image
+                        src={icon}
+                        alt={displayName}
+                        width={24}
+                        height={24}
+                        className="object-contain transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <Trophy className="h-6 w-6 text-white" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-medium text-center ${
+                      isActive ? 'text-primary' : ''
+                    }`}
+                  >
+                    {displayName}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
 
       {filteredBooks.length === 0 ? (
         <NoBooksCard
@@ -643,7 +613,9 @@ export default function ClientBookmakingDashboard({
                 (() => {
                   const categoriesCount = groupedData.data.length;
                   const defaultOpenCategories =
-                    categoriesCount <= 2 ? groupedData.data.map((item) => item.category) : [];
+                    categoriesCount <= 2
+                      ? groupedData.data.map((item) => item.category)
+                      : [];
 
                   return groupedData.data.map(
                     ({ category, championships, noChampionshipBooks }) => {
@@ -652,11 +624,9 @@ export default function ClientBookmakingDashboard({
 
                       const championshipsCount = championships.length;
                       const defaultOpenChampionships =
-                        championshipsCount <= 2 ? championships.map((c) => c.name) : [];
-
-                      const totalBooks =
-                        championships.reduce((acc, c) => acc + c.books.length, 0) +
-                        noChampionshipBooks.length;
+                        championshipsCount <= 2
+                          ? championships.map((c) => c.name)
+                          : [];
 
                       return (
                         <Accordion
@@ -664,7 +634,9 @@ export default function ClientBookmakingDashboard({
                           type="single"
                           collapsible
                           defaultValue={
-                            defaultOpenCategories.includes(category) ? category : undefined
+                            defaultOpenCategories.includes(category)
+                              ? category
+                              : undefined
                           }
                           className="border rounded-xl overflow-hidden"
                         >
@@ -680,7 +652,9 @@ export default function ClientBookmakingDashboard({
                                     className="object-contain"
                                   />
                                 )}
-                                <span className="font-semibold text-base">{displayName}</span>
+                                <span className="font-semibold text-base">
+                                  {displayName}
+                                </span>
                               </div>
                             </AccordionTrigger>
                             <AccordionContent className="pb-0">
@@ -691,7 +665,9 @@ export default function ClientBookmakingDashboard({
                                     type="single"
                                     collapsible
                                     defaultValue={
-                                      defaultOpenChampionships.includes(name) ? name : undefined
+                                      defaultOpenChampionships.includes(name)
+                                        ? name
+                                        : undefined
                                     }
                                     className="border rounded-lg overflow-hidden ml-2"
                                   >
@@ -699,7 +675,9 @@ export default function ClientBookmakingDashboard({
                                       <AccordionTrigger className="px-3 py-2 hover:no-underline bg-muted/20 hover:bg-muted/40">
                                         <div className="flex items-center gap-2">
                                           <Trophy className="h-4 w-4 text-yellow-500" />
-                                          <span className="font-medium text-sm">{name}</span>
+                                          <span className="font-medium text-sm">
+                                            {name}
+                                          </span>
                                           <Badge variant="secondary" className="ml-2 text-xs">
                                             {books.length}
                                           </Badge>
@@ -770,7 +748,9 @@ export default function ClientBookmakingDashboard({
                           type="single"
                           collapsible
                           defaultValue={
-                            defaultOpenChampionships.includes(name) ? name : undefined
+                            defaultOpenChampionships.includes(name)
+                              ? name
+                              : undefined
                           }
                           className="border rounded-xl overflow-hidden"
                         >
@@ -843,11 +823,6 @@ export default function ClientBookmakingDashboard({
               ))}
             </div>
           )}
-
-          {/* Pagination (commented out in original) */}
-          {/* {pagination.totalPages > 1 && (
-            <ShadcnPagination pagination={pagination} onPageChange={handlePageChange} />
-          )} */}
         </>
       )}
 
@@ -864,6 +839,7 @@ export default function ClientBookmakingDashboard({
   );
 }
 
+// (BookCard, NoBooksCard, ShadcnPagination remain exactly as before)
 function BookCard({
   book,
   onOutcomeClick,
@@ -883,7 +859,6 @@ function BookCard({
   const locale = useLocale();
   const router = useRouter();
 
-  const bookStatus = book.displayStatus || (book.isLive ? 'LIVE' : 'UPCOMING');
   const firstFastBet = book.events?.find((event) => event.isFirstFastOption);
   const secondFastBet = book.events?.find((event) => event.isSecondFastOption);
   const mainTeams = book.teams?.slice(0, 2) || [];
@@ -892,14 +867,17 @@ function BookCard({
   const isAcceptingBets = now < bookDate;
   const sportName = book.category.charAt(0).toUpperCase() + book.category.slice(1).toLowerCase();
 
-  const formattedDate = new Date(book.date).toLocaleString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
-    timeZone: 'Asia/Kolkata',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const formattedDate = new Date(book.date).toLocaleString(
+    locale === 'hi' ? 'hi-IN' : 'en-IN',
+    {
+      timeZone: 'Asia/Kolkata',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }
+  );
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -914,14 +892,6 @@ function BookCard({
         part
       )
     );
-  };
-
-  const handleChampionshipClick = (e: React.MouseEvent, championship: string) => {
-    e.stopPropagation();
-    const url = new URL(window.location.href);
-    url.searchParams.set('filter', championship);
-    url.searchParams.delete('page');
-    router.push(url.toString());
   };
 
   const handleOutcomeClickWrapper = (e: React.MouseEvent, outcome: any, event: any, book: any) => {
@@ -954,10 +924,10 @@ function BookCard({
   const renderFastBetOutcomes = (event: any) => {
     if (!event || !event.outcomes || event.outcomes.length === 0) return null;
 
-    // Sort outcomes by order
     const outcomes = event.outcomes;
     const sortedOutcomes = [...outcomes].sort((a: any, b: any) => a.order - b.order);
-    const gridCols = sortedOutcomes.length === 2 ? 'grid-cols-2' : sortedOutcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1';
+    const gridCols =
+      sortedOutcomes.length === 2 ? 'grid-cols-2' : sortedOutcomes.length === 3 ? 'grid-cols-3' : 'grid-cols-1';
 
     return (
       <div className="mt-3 px-2 pb-2">
@@ -977,26 +947,16 @@ function BookCard({
               }`}
               onClick={(e) => handleOutcomeClickWrapper(e, outcome, event, book)}
             >
-              <span
-                className={`text-xl font-extrabold text-sky-400 ${
-                  isAcceptingBets ? 'group-hover/outcome:text-sky-300' : ''
-                }`}
-              >
+              <span className={`text-xl font-extrabold text-sky-400 ${isAcceptingBets ? 'group-hover/outcome:text-sky-300' : ''}`}>
                 {outcome.odds.toFixed(2)}
               </span>
-              <span
-                className={`text-[10px] text-center font-medium ${
-                  isAcceptingBets ? 'group-hover/outcome:text-primary' : ''
-                }`}
-              >
+              <span className={`text-[10px] text-center font-medium ${isAcceptingBets ? 'group-hover/outcome:text-primary' : ''}`}>
                 {getOutcomeLabel(outcome, idx, sortedOutcomes.length)}
               </span>
             </div>
           ))}
         </div>
-        {!isAcceptingBets && (
-          <div className="text-xs text-muted-foreground text-center mt-1">{t('betsClosed')}</div>
-        )}
+        {!isAcceptingBets && <div className="text-xs text-muted-foreground text-center mt-1">{t('betsClosed')}</div>}
       </div>
     );
   };
@@ -1008,31 +968,18 @@ function BookCard({
     : book.title;
 
   return (
-    <Card
-      className="hover:shadow-md transition-shadow bg-black border-border cursor-pointer"
-      onClick={handleCardClick}
-    >
+    <Card className="hover:shadow-md transition-shadow bg-black border-border cursor-pointer" onClick={handleCardClick}>
       <div className="pb-1 mb-3 border-b border-border pt-2">
         <div className="flex items-center gap-2 px-4">
-          <span className="text-xs font-medium text-muted-foreground truncate">
-            {sportName}. {mainDisplayText}
-          </span>
+          <span className="text-xs font-medium text-muted-foreground truncate">{sportName}. {mainDisplayText}</span>
         </div>
       </div>
 
       <div className="space-y-2 mb-3 px-4">
         {mainTeams.map((team) => (
           <div key={team.id} className="flex items-center gap-2">
-            {team.image && (
-              <img
-                src={team.image}
-                alt={team.name}
-                className="w-6 h-6 rounded-full object-cover border border-border shrink-0"
-              />
-            )}
-            <span className="text-sm font-medium text-foreground truncate">
-              {searchQuery ? highlightText(team.name, searchQuery) : team.name}
-            </span>
+            {team.image && <img src={team.image} alt={team.name} className="w-6 h-6 rounded-full object-cover border border-border shrink-0" />}
+            <span className="text-sm font-medium text-foreground truncate">{searchQuery ? highlightText(team.name, searchQuery) : team.name}</span>
           </div>
         ))}
         {book.teams && book.teams.length > 2 && (
@@ -1043,25 +990,17 @@ function BookCard({
       </div>
 
       <div className="text-xs text-muted-foreground mb-1 px-4">{formattedDate}</div>
-
       {firstFastBet && renderFastBetOutcomes(firstFastBet)}
       {secondFastBet && renderFastBetOutcomes(secondFastBet)}
-
       {(firstFastBet || secondFastBet) && (
         <div className="px-2 pb-2 mt-1">
-          <Link
-            href={`/book/${book.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="block w-full"
-          >
+          <Link href={`/book/${book.id}`} onClick={(e) => e.stopPropagation()} className="block w-full">
             <Button variant="outline" size="sm" className="w-full text-xs h-8">
-              {t('viewAllOptions')}
-              <ArrowRight className="h-3 w-3 ml-1" />
+              {t('viewAllOptions')} <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
           </Link>
         </div>
       )}
-
       {!firstFastBet && !secondFastBet && (
         <div className="text-center py-6 text-muted-foreground border border-dashed border-border rounded-lg">
           <Trophy className="h-8 w-8 mx-auto mb-3 opacity-50" />
@@ -1071,6 +1010,7 @@ function BookCard({
     </Card>
   );
 }
+
 function NoBooksCard({
   category,
   filter,
@@ -1083,7 +1023,6 @@ function NoBooksCard({
   hasActiveSearchOrFilter?: boolean;
 }) {
   const t = useTranslations('Events');
-
   let message = t('noBooksAvailable');
   let description = t('noBooksAvailableDescription');
 
@@ -1108,17 +1047,9 @@ function NoBooksCard({
         <h3 className="text-base sm:text-lg font-semibold mb-2">{message}</h3>
         <p className="text-muted-foreground mb-4 text-sm sm:text-base">{description}</p>
         <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <Link href="/book">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              {t('viewAllEvents')}
-            </Button>
-          </Link>
+          <Link href="/book"><Button variant="outline" size="sm" className="w-full sm:w-auto">{t('viewAllEvents')}</Button></Link>
           {hasActiveSearchOrFilter && (
-            <Link href="/book">
-              <Button variant="default" size="sm" className="w-full sm:w-auto">
-                {t('clearAll')}
-              </Button>
-            </Link>
+            <Link href="/book"><Button variant="default" size="sm" className="w-full sm:w-auto">{t('clearAll')}</Button></Link>
           )}
         </div>
       </CardContent>
@@ -1126,43 +1057,29 @@ function NoBooksCard({
   );
 }
 
-function ShadcnPagination({
-  pagination,
-  onPageChange,
-}: {
-  pagination: PaginationInfo;
-  onPageChange: (page: number) => void;
-}) {
+function ShadcnPagination({ pagination, onPageChange }: { pagination: PaginationInfo; onPageChange: (page: number) => void }) {
   const t = useTranslations('Events');
   const { currentPage, totalPages } = pagination;
 
   const getPageNumbers = (): (number | string)[] => {
     const pages: (number | string)[] = [];
     const maxVisiblePages = 5;
-
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       let start = Math.max(1, currentPage - 2);
       let end = Math.min(totalPages, start + maxVisiblePages - 1);
-
-      if (end === totalPages) {
-        start = Math.max(1, totalPages - maxVisiblePages + 1);
-      }
-
+      if (end === totalPages) start = Math.max(1, totalPages - maxVisiblePages + 1);
       for (let i = start; i <= end; i++) pages.push(i);
-
       if (start > 1) {
         pages.unshift(1);
         if (start > 2) pages.splice(1, 0, 'ellipsis-start');
       }
-
       if (end < totalPages) {
         pages.push(totalPages);
         if (end < totalPages - 1) pages.splice(pages.length - 1, 0, 'ellipsis-end');
       }
     }
-
     return pages;
   };
 
@@ -1171,44 +1088,17 @@ function ShadcnPagination({
       <Pagination>
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage > 1) onPageChange(currentPage - 1);
-              }}
-              className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-            />
+            <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (currentPage > 1) onPageChange(currentPage - 1); }} className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''} />
           </PaginationItem>
-
           {getPageNumbers().map((page, index) => (
             <PaginationItem key={index}>
-              {page === 'ellipsis-start' || page === 'ellipsis-end' ? (
-                <PaginationEllipsis />
-              ) : (
-                <PaginationLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onPageChange(page as number);
-                  }}
-                  isActive={currentPage === page}
-                >
-                  {page}
-                </PaginationLink>
+              {page === 'ellipsis-start' || page === 'ellipsis-end' ? <PaginationEllipsis /> : (
+                <PaginationLink href="#" onClick={(e) => { e.preventDefault(); onPageChange(page as number); }} isActive={currentPage === page}>{page}</PaginationLink>
               )}
             </PaginationItem>
           ))}
-
           <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage < totalPages) onPageChange(currentPage + 1);
-              }}
-              className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
-            />
+            <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) onPageChange(currentPage + 1); }} className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''} />
           </PaginationItem>
         </PaginationContent>
       </Pagination>
