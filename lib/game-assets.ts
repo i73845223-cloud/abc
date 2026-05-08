@@ -96,7 +96,7 @@ export const GAME_ASSETS = {
       '2symb': getGameImage('rupee-rush', '2symb.webp'),
       '3symb': getGameImage('rupee-rush', '3symb.webp'),
       '4symb': getGameImage('rupee-rush', '4symb.webp'),
-      '5symb': getGameImage('rupee-rush', '5symb.webp'),
+      '5symb': getGameImage('rupee-rush', '5symb.gif'),
     },
     sounds: {
       '1symb': getGameSound('rupee-rush', '1symb.mp3'),
