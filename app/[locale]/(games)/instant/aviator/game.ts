@@ -1,3 +1,4 @@
+// app/[locale]/(games)/instant/aviator/game.ts
 export type GamePhase = 'waiting' | 'flying' | 'crashed';
 export type BetStatus = 'idle' | 'placed' | 'cashed_out' | 'lost';
 
@@ -7,6 +8,7 @@ export interface Bet {
   status: BetStatus;
   cashedOutAt: number | null;
   profit: number | null;
+  betTransactionId: string | null;
 }
 
 export interface GameState {
@@ -28,4 +30,7 @@ export type GameAction =
   | { type: 'CANCEL_BET'; betId: 1 | 2 }
   | { type: 'CASH_OUT'; betId: 1 | 2 }
   | { type: 'PLACE_NEXT_BET'; betId: 1 | 2; amount: number }
-  | { type: 'CANCEL_NEXT_BET'; betId: 1 | 2 };
+  | { type: 'CANCEL_NEXT_BET'; betId: 1 | 2 }
+  | { type: 'SET_BALANCE'; amount: number }
+  | { type: 'BET_TRANSACTION_READY'; betId: 1 | 2; transactionId: string }
+  | { type: 'BET_TRANSACTION_CLEAR'; betId: 1 | 2 };

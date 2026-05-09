@@ -1,10 +1,16 @@
+// app/[locale]/(games)/instant/aviator/reducer.ts
 import { GameState, GameAction, Bet } from './game';
 import { generateCrashPoint, growMultiplier } from './game-logic';
 
 const COUNTDOWN = 5;
 
 export const mkBet = (id: 1 | 2): Bet => ({
-  id, amount: 0, status: 'idle', cashedOutAt: null, profit: null,
+  id,
+  amount: 0,
+  status: 'idle',
+  cashedOutAt: null,
+  profit: null,
+  betTransactionId: null,
 });
 
 export const initialState: GameState = {
@@ -12,7 +18,7 @@ export const initialState: GameState = {
   multiplier: 1.0,
   crashPoint: 2.0,
   bets: [mkBet(1), mkBet(2)],
-  balance: 1000.00,
+  balance: 10000.00,
   history: [],
   countdown: COUNTDOWN,
   nextRoundBets: [mkBet(1), mkBet(2)],
@@ -20,7 +26,6 @@ export const initialState: GameState = {
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-
     case 'COUNTDOWN_TICK': {
       const n = state.countdown - 1;
       return { ...state, countdown: Math.max(0, n) };
@@ -28,7 +33,6 @@ export function reducer(state: GameState, action: GameAction): GameState {
 
     case 'START_ROUND': {
       const crashPoint = generateCrashPoint();
-      // Activate queued bets (balance already deducted when they were placed)
       const bets: [Bet, Bet] = [
         state.nextRoundBets[0].amount > 0
           ? { ...state.nextRoundBets[0], status: 'placed' }
@@ -37,13 +41,10 @@ export function reducer(state: GameState, action: GameAction): GameState {
           ? { ...state.nextRoundBets[1], status: 'placed' }
           : mkBet(2),
       ];
-      // Merge with any current-round placed bets (placed during waiting)
       const finalBets: [Bet, Bet] = [
         state.bets[0].status === 'placed' ? state.bets[0] : bets[0],
         state.bets[1].status === 'placed' ? state.bets[1] : bets[1],
       ];
-
-      // No balance change here – all deductions happened at bet placement
       return {
         ...state,
         phase: 'flying',
@@ -102,7 +103,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const winnings = b.amount * state.multiplier;
       const bets = [...state.bets] as [Bet, Bet];
       bets[action.betId - 1] = {
-        ...b, status: 'cashed_out',
+        ...b,
+        status: 'cashed_out',
         cashedOutAt: state.multiplier,
         profit: winnings - b.amount,
       };
@@ -113,7 +115,6 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const { betId, amount } = action;
       if (amount <= 0 || amount > state.balance) return state;
       const nextRoundBets = [...state.nextRoundBets] as [Bet, Bet];
-      // Refund any previously queued amount on this slot, then deduct the new amount
       const prevAmount = nextRoundBets[betId - 1].amount;
       nextRoundBets[betId - 1] = { ...mkBet(betId), amount, status: 'placed' };
       return {
@@ -131,6 +132,42 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, nextRoundBets, balance: state.balance + refund };
     }
 
-    default: return state;
+    case 'BET_TRANSACTION_READY': {
+      const bets =
+        state.phase === 'waiting'
+          ? ([...state.bets] as [Bet, Bet])
+          : ([...state.nextRoundBets] as [Bet, Bet]);
+      bets[action.betId - 1] = {
+        ...bets[action.betId - 1],
+        betTransactionId: action.transactionId,
+      };
+      if (state.phase === 'waiting') {
+        return { ...state, bets };
+      } else {
+        return { ...state, nextRoundBets: bets };
+      }
+    }
+
+    case 'BET_TRANSACTION_CLEAR': {
+      const bets =
+        state.phase === 'waiting'
+          ? ([...state.bets] as [Bet, Bet])
+          : ([...state.nextRoundBets] as [Bet, Bet]);
+      bets[action.betId - 1] = {
+        ...bets[action.betId - 1],
+        betTransactionId: null,
+      };
+      if (state.phase === 'waiting') {
+        return { ...state, bets };
+      } else {
+        return { ...state, nextRoundBets: bets };
+      }
+    }
+
+    case 'SET_BALANCE':
+      return { ...state, balance: action.amount };
+
+    default:
+      return state;
   }
 }

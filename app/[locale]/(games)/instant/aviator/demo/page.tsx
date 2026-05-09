@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
-import { useGame } from './use-game';
-import { FlightGraph } from './flight-graph';
-import { BetPanel } from './bet-panel';
-import { HistoryBar } from './history-bar';
-import { fmtMoney } from './game-logic';
+import { useGame } from '../use-game';
+import { FlightGraph } from '../flight-graph';
+import { BetPanel } from '../bet-panel';
+import { HistoryBar } from '../history-bar';
+import { fmtMoney } from '../game-logic';
 
 export default function AviatorGame() {
   const { state, placeBet, cancelBet, cashOut } = useGame();

@@ -21,6 +21,14 @@ export function BetPanel({
 }: Props) {
   const [amount, setAmount] = useState(100);
   const [raw, setRaw]       = useState('100');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Guard prevents multiple clicks while processing
+  const guard = (fn: () => void | Promise<void>) => async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try { await fn(); } finally { setSubmitting(false); }
+  };
 
   const isWaiting  = phase === 'waiting';
   const isFlying   = phase === 'flying';
@@ -30,7 +38,7 @@ export function BetPanel({
   const lost       = bet.status === 'lost';
   const nextQueued = nextBet.status === 'placed';
 
-  const inputLocked = (isWaiting && betPlaced) || ((isFlying || isCrashed) && nextQueued);
+  const inputLocked = (isWaiting && betPlaced) || ((isFlying || isCrashed) && nextQueued) || submitting;
 
   const safeAmount = Math.max(100, Math.min(amount, balance, 10000));
   const potential  = betPlaced ? bet.amount * multiplier : 0;
@@ -156,8 +164,8 @@ export function BetPanel({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 2 }}>
         {isWaiting && !betPlaced && (
           <button
-            onClick={() => onPlaceBet(safeAmount)}
-            disabled={safeAmount <= 0 || safeAmount > balance}
+            onClick={guard(() => onPlaceBet(safeAmount))}
+            disabled={submitting || safeAmount <= 0 || safeAmount > balance}
             style={{
               width: '100%', padding: '13px 0', borderRadius: 12,
               fontFamily: "'Orbitron',monospace", fontWeight: 900,
@@ -167,7 +175,7 @@ export function BetPanel({
                 : 'rgba(255,255,255,0.04)',
               color: safeAmount > 0 && safeAmount <= balance ? '#001a10' : 'rgba(255,255,255,0.15)',
               boxShadow: safeAmount > 0 && safeAmount <= balance ? '0 4px 18px rgba(0,232,122,0.35)' : 'none',
-              cursor: safeAmount > 0 && safeAmount <= balance ? 'pointer' : 'not-allowed',
+              cursor: safeAmount > 0 && safeAmount <= balance && !submitting ? 'pointer' : 'not-allowed',
               transition: 'all .2s',
             }}
           >
@@ -185,8 +193,8 @@ export function BetPanel({
             }}>
               {formatRupee(bet.amount)} BET ✓
             </div>
-            <button onClick={onCancelBet} style={{
-              padding: '13px 16px', borderRadius: 12, cursor: 'pointer',
+            <button onClick={guard(onCancelBet)} disabled={submitting} style={{
+              padding: '13px 16px', borderRadius: 12, cursor: submitting ? 'not-allowed' : 'pointer',
               background: 'rgba(255,77,109,0.1)', color: '#ff4d6d',
               border: '1px solid rgba(255,77,109,0.3)',
               fontFamily: 'monospace', fontWeight: 700, fontSize: 16,
@@ -195,8 +203,8 @@ export function BetPanel({
         )}
 
         {isFlying && betPlaced && (
-          <button onClick={onCashOut} style={{
-            width: '100%', padding: '0 0 2px', borderRadius: 12, cursor: 'pointer',
+          <button onClick={guard(onCashOut)} disabled={submitting} style={{
+            width: '100%', padding: '0 0 2px', borderRadius: 12, cursor: submitting ? 'not-allowed' : 'pointer',
             fontFamily: "'Orbitron',monospace", fontWeight: 900,
             background: 'linear-gradient(135deg,#ff9500,#ff6200)',
             color: 'white', border: 'none',
@@ -246,10 +254,10 @@ export function BetPanel({
 
             {!nextQueued ? (
               <button
-                onClick={() => onPlaceBet(safeAmount)}
-                disabled={safeAmount <= 0 || safeAmount > balance}
+                onClick={guard(() => onPlaceBet(safeAmount))}
+                disabled={submitting || safeAmount <= 0 || safeAmount > balance}
                 style={{
-                  width: '100%', padding: '10px 0', borderRadius: 10, cursor: 'pointer',
+                  width: '100%', padding: '10px 0', borderRadius: 10, cursor: submitting ? 'not-allowed' : 'pointer',
                   fontFamily: "'Orbitron',monospace", fontWeight: 700,
                   fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                   background: safeAmount > 0 && safeAmount <= balance ? 'rgba(96,239,255,0.1)' : 'rgba(255,255,255,0.03)',
@@ -269,8 +277,8 @@ export function BetPanel({
                 }}>
                   {formatRupee(nextBet.amount)} Queued ✓
                 </div>
-                <button onClick={onCancelBet} style={{
-                  padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                <button onClick={guard(onCancelBet)} disabled={submitting} style={{
+                  padding: '10px 12px', borderRadius: 10, cursor: submitting ? 'not-allowed' : 'pointer',
                   background: 'rgba(255,77,109,0.08)', color: '#ff4d6d',
                   border: '1px solid rgba(255,77,109,0.2)',
                   fontFamily: 'monospace', fontWeight: 700, fontSize: 14,

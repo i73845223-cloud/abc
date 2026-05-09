@@ -11,28 +11,52 @@ interface Props {
 
 type Pt = { t: number; m: number };
 
+// Explicit shape of the ref – never undefined because we always initialise it
+type State = {
+  phase: GamePhase;
+  multiplier: number;
+  countdown: number;
+  points: Pt[];
+  startMs: number;
+  tick: number;
+  crashStartMs: number | null;
+  crashParticles: {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    maxLife: number;
+    size: number;
+    color: string;
+  }[];
+  stars: { x: number; y: number; r: number; speed: number; phase: number }[];
+  clouds: { x: number; y: number; w: number; speed: number; alpha: number }[];
+  propAngle: number;
+};
+
 export function FlightGraph({ phase, multiplier, countdown }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const rafRef    = useRef<number>(0);
 
-  const sr = useRef({
+  const sr = useRef<State>({
     phase,
     multiplier,
     countdown,
-    points:      [] as Pt[],
-    startMs:     0,
-    tick:        0,       // frame counter for animations
-    // stars — positions fixed at init, twinkle via tick
-    stars: Array.from({ length: 90 }, (_, i) => ({
-      x: Math.random(),   // 0..1 normalized
+    points: [],
+    startMs: 0,
+    tick: 0,
+    crashStartMs: null,
+    crashParticles: [],
+    stars: Array.from({ length: 90 }, () => ({
+      x: Math.random(),
       y: Math.random(),
       r: 0.4 + Math.random() * 1.2,
-      speed: 0.00003 + Math.random() * 0.00008,  // parallax scroll speed
-      phase: Math.random() * Math.PI * 2,         // twinkle offset
+      speed: 0.00003 + Math.random() * 0.00008,
+      phase: Math.random() * Math.PI * 2,
     })),
-    // clouds
-    clouds: Array.from({ length: 5 }, (_, i) => ({
+    clouds: Array.from({ length: 5 }, () => ({
       x: Math.random(),
       y: 0.15 + Math.random() * 0.5,
       w: 0.08 + Math.random() * 0.1,
@@ -55,6 +79,30 @@ export function FlightGraph({ phase, multiplier, countdown }: Props) {
     if (prev !== 'flying' && phase === 'flying') {
       sr.current.points  = [{ t: 0, m: 1.0 }];
       sr.current.startMs = performance.now();
+      sr.current.crashStartMs = null;
+      sr.current.crashParticles = [];
+    }
+    if (phase === 'crashed' && sr.current.crashStartMs === null) {
+      sr.current.crashStartMs = performance.now();
+      const particles: State['crashParticles'] = [];
+      const planeX = 0.6;
+      const planeY = 0.3;
+      const colors = ['#ff4d6d', '#ff9500', '#ffcc00', '#ffffff', '#ff7700', '#ff3300'];
+      for (let i = 0; i < 80; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.005 + Math.random() * 0.04;
+        particles.push({
+          x: planeX + (Math.random() - 0.5) * 0.1,
+          y: planeY + (Math.random() - 0.5) * 0.1,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 0.01,
+          life: 1,
+          maxLife: 0.5 + Math.random() * 1.2,
+          size: 1.5 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+        });
+      }
+      sr.current.crashParticles = particles;
     }
   }, [phase]);
 
@@ -101,6 +149,23 @@ export function FlightGraph({ phase, multiplier, countdown }: Props) {
         }
       }
 
+      // Update crash particles
+      if (sr.current.crashParticles.length > 0) {
+        const now = performance.now();
+        const elapsed = sr.current.crashStartMs
+          ? (now - sr.current.crashStartMs) / 1000
+          : 0;
+        sr.current.crashParticles.forEach((p) => {
+          p.life = Math.max(0, 1 - elapsed / p.maxLife);
+          p.x += p.vx * dt * 0.06;
+          p.y += p.vy * dt * 0.06;
+          p.vy += 0.0002 * dt;
+        });
+        if (elapsed > 2.5) {
+          sr.current.crashParticles = [];
+        }
+      }
+
       const W = canvas.width  / dpr;
       const H = canvas.height / dpr;
       const ctx = canvas.getContext('2d')!;
@@ -113,7 +178,10 @@ export function FlightGraph({ phase, multiplier, countdown }: Props) {
     }
     rafRef.current = requestAnimationFrame(loop);
 
-    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
   }, []);
 
   return (
@@ -124,7 +192,7 @@ export function FlightGraph({ phase, multiplier, countdown }: Props) {
   );
 }
 
-// ── HTML overlay for text (always crisp) ──────────────────────
+// ── HTML overlay ───────────────────────────────────────────────
 function Overlay({ phase, multiplier, countdown }: Props) {
   const color = multColor(multiplier);
   return (
@@ -180,28 +248,10 @@ function Overlay({ phase, multiplier, countdown }: Props) {
 }
 
 // ── Canvas draw ────────────────────────────────────────────────
-type SR = typeof import('./flight-graph')['FlightGraph'] extends (p: any) => any ? never : ReturnType<typeof useRef<{
-  phase: GamePhase; multiplier: number; countdown: number;
-  points: Pt[]; startMs: number; tick: number;
-  stars: {x:number;y:number;r:number;speed:number;phase:number}[];
-  clouds: {x:number;y:number;w:number;speed:number;alpha:number}[];
-  propAngle: number;
-}>>['current'];
-
-function drawFrame(
-  ctx: CanvasRenderingContext2D,
-  W: number, H: number,
-  s: {
-    phase: GamePhase; multiplier: number; countdown: number;
-    points: Pt[]; tick: number;
-    stars:  {x:number;y:number;r:number;speed:number;phase:number}[];
-    clouds: {x:number;y:number;w:number;speed:number;alpha:number}[];
-    propAngle: number;
-  },
-) {
+function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, s: State) {
   ctx.clearRect(0, 0, W, H);
 
-  // ── Sky gradient — shifts hue as multiplier rises ─────────
+  // Sky gradient
   const m = s.multiplier;
   const skyR = Math.round(8  + Math.min(m * 4, 40));
   const skyG = Math.round(12 + Math.min(m * 2, 20));
@@ -212,7 +262,7 @@ function drawFrame(
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // ── Stars ─────────────────────────────────────────────────
+  // Stars
   for (const star of s.stars) {
     const twinkle = 0.4 + 0.6 * Math.abs(Math.sin(s.tick * 0.001 + star.phase));
     ctx.beginPath();
@@ -221,7 +271,7 @@ function drawFrame(
     ctx.fill();
   }
 
-  // ── Clouds ────────────────────────────────────────────────
+  // Clouds
   for (const cloud of s.clouds) {
     const cx = cloud.x * W;
     const cy = cloud.y * H;
@@ -229,7 +279,6 @@ function drawFrame(
     ctx.save();
     ctx.globalAlpha = cloud.alpha;
     ctx.fillStyle   = '#ffffff';
-    // 3 overlapping ellipses per cloud
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
       ctx.ellipse(cx + (i - 1) * cw * 0.5, cy + (i === 1 ? -cw * 0.2 : 0), cw * (i === 1 ? 0.65 : 0.45), cw * 0.3, 0, 0, Math.PI * 2);
@@ -238,7 +287,7 @@ function drawFrame(
     ctx.restore();
   }
 
-  // ── Graph area ────────────────────────────────────────────
+  // Graph area
   const PAD_L = Math.max(36, W * 0.055);
   const PAD_B = Math.max(28, H * 0.09);
   const PAD_R = 20;
@@ -248,81 +297,129 @@ function drawFrame(
 
   const pts = s.points;
 
-  if (pts.length < 2) {
+  if (pts.length >= 2) {
+    const lastPt = pts[pts.length - 1];
+
+    const maxT = Math.max(lastPt.t * 1.15, 8);
+    const maxM = Math.max(lastPt.m * 1.20, 2);
+
+    const toX = (t: number) => PAD_L + (t / maxT) * gW;
+    const toY = (m: number) => {
+      const logV = Math.log(Math.max(m, 1.0));
+      const logM = Math.log(Math.max(maxM, 1.01));
+      return PAD_T + gH - (logV / logM) * gH;
+    };
+
+    drawGrid(ctx, PAD_L, PAD_T, gW, gH, maxM, W, H);
+
+    const color = multColor(s.multiplier);
+
+    // Fill
+    ctx.beginPath();
+    ctx.moveTo(toX(pts[0].t), toY(pts[0].m));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(pts[i].t), toY(pts[i].m));
+    ctx.lineTo(toX(lastPt.t), PAD_T + gH);
+    ctx.lineTo(PAD_L, PAD_T + gH);
+    ctx.closePath();
+    const fill = ctx.createLinearGradient(0, PAD_T, 0, PAD_T + gH);
+    fill.addColorStop(0,   color + '50');
+    fill.addColorStop(0.5, color + '20');
+    fill.addColorStop(1,   color + '06');
+    ctx.fillStyle = fill;
+    ctx.fill();
+
+    // Glow line
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 14;
+    ctx.beginPath();
+    ctx.moveTo(toX(pts[0].t), toY(pts[0].m));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(pts[i].t), toY(pts[i].m));
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 3;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // Plane (alive)
+    if (s.phase === 'flying' && s.crashStartMs === null) {
+      const px = toX(lastPt.t);
+      const py = toY(lastPt.m);
+      let angle = -12;
+      if (pts.length >= 5) {
+        const a = pts[pts.length - 5];
+        const dx = toX(lastPt.t) - toX(a.t);
+        const dy = toY(lastPt.m) - toY(a.m);
+        angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        angle = Math.max(-42, Math.min(-4, angle));
+      }
+      const ps = Math.max(0.5, Math.min(1.0, W / 650));
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(angle * Math.PI / 180);
+      drawPlane(ctx, color, ps, s.propAngle, s.tick);
+      ctx.restore();
+    }
+  } else if (pts.length > 0) {
     drawGrid(ctx, PAD_L, PAD_T, gW, gH, 3, W, H);
-    return;
   }
 
-  const lastPt = pts[pts.length - 1];
+  // CRASH ANIMATION
+  if (s.phase === 'crashed' && s.crashStartMs !== null) {
+    const elapsed = (performance.now() - s.crashStartMs) / 1000;
+    const crashDuration = 2.5;
 
-  // ── KEY FIX: axis ranges always show lookahead so plane stays inside ──
-  // X axis: always show 15% more time than current, minimum 8 seconds
-  const maxT = Math.max(lastPt.t * 1.15, 8);
-  // Y axis: always show 20% more multiplier headroom, min range 2x
-  const maxM = Math.max(lastPt.m * 1.20, 2);
+    if (elapsed < crashDuration) {
+      const progress = elapsed / crashDuration;
+      const fallY = Math.min(1, progress * 2);
+      const tumble = progress * 8 * Math.PI;
+      const scale = 1 - progress * 0.6;
 
-  const toX = (t: number) => PAD_L + (t / maxT) * gW;
-  const toY = (m: number) => {
-    const logV = Math.log(Math.max(m, 1.0));
-    const logM = Math.log(Math.max(maxM, 1.01));
-    return PAD_T + gH - (logV / logM) * gH;
-  };
+      let crashX = PAD_L + gW * 0.7;
+      let crashY = PAD_T + gH * 0.3;
+      if (s.points.length > 0) {
+        const last = s.points[s.points.length - 1];
+        const maxT = Math.max(last.t * 1.15, 8);
+        const maxM = Math.max(last.m * 1.20, 2);
+        const toX = (t: number) => PAD_L + (t / maxT) * gW;
+        const toY = (m: number) => {
+          const logV = Math.log(Math.max(m, 1.0));
+          const logM = Math.log(Math.max(maxM, 1.01));
+          return PAD_T + gH - (logV / logM) * gH;
+        };
+        crashX = toX(last.t);
+        crashY = toY(last.m);
+      }
 
-  drawGrid(ctx, PAD_L, PAD_T, gW, gH, maxM, W, H);
+      const px = crashX + progress * 40;
+      const py = crashY + fallY * H * 0.6;
+      const angle = -30 + tumble;
+      const ps = Math.max(0.5, Math.min(1.0, W / 650)) * scale;
 
-  const color = multColor(s.multiplier);
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(angle);
+      ctx.globalAlpha = 1 - progress * 0.8;
+      drawPlane(ctx, '#ff4d6d', ps, s.propAngle + tumble, s.tick);
+      ctx.restore();
 
-  // ── Fill ─────────────────────────────────────────────────
-  ctx.beginPath();
-  ctx.moveTo(toX(pts[0].t), toY(pts[0].m));
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(pts[i].t), toY(pts[i].m));
-  ctx.lineTo(toX(lastPt.t), PAD_T + gH);
-  ctx.lineTo(PAD_L, PAD_T + gH);
-  ctx.closePath();
-  const fill = ctx.createLinearGradient(0, PAD_T, 0, PAD_T + gH);
-  fill.addColorStop(0,   color + '50');
-  fill.addColorStop(0.5, color + '20');
-  fill.addColorStop(1,   color + '06');
-  ctx.fillStyle = fill;
-  ctx.fill();
-
-  // ── Glow line ────────────────────────────────────────────
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur  = 14;
-  ctx.beginPath();
-  ctx.moveTo(toX(pts[0].t), toY(pts[0].m));
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(pts[i].t), toY(pts[i].m));
-  ctx.strokeStyle = color;
-  ctx.lineWidth   = 3;
-  ctx.lineJoin    = 'round';
-  ctx.lineCap     = 'round';
-  ctx.stroke();
-  ctx.restore();
-
-  // ── Plane ─────────────────────────────────────────────────
-  if (s.phase !== 'crashed') {
-    const px = toX(lastPt.t);
-    const py = toY(lastPt.m);
-
-    let angle = -12;
-    if (pts.length >= 5) {
-      const a = pts[pts.length - 5];
-      const dx = toX(lastPt.t) - toX(a.t);
-      const dy = toY(lastPt.m) - toY(a.m);
-      angle = Math.atan2(dy, dx) * 180 / Math.PI;
-      angle = Math.max(-42, Math.min(-4, angle));
+      // Explosion particles
+      for (const p of s.crashParticles) {
+        if (p.life <= 0) continue;
+        const alpha = p.life;
+        const pxAbs = crashX + (p.x - 0.6) * W + p.vx * progress * 800;
+        const pyAbs = crashY + (p.y - 0.3) * H + p.vy * progress * 800;
+        ctx.beginPath();
+        ctx.arc(pxAbs, pyAbs, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + Math.round(alpha * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      }
     }
-
-    const ps = Math.max(0.5, Math.min(1.0, W / 650));
-    ctx.save();
-    ctx.translate(px, py);
-    ctx.rotate(angle * Math.PI / 180);
-    drawPlane(ctx, color, ps, s.propAngle, s.tick);
-    ctx.restore();
   }
 }
 
+// ── Helper functions ───────────────────────────────────────────
 function drawGrid(
   ctx: CanvasRenderingContext2D,
   pL: number, pT: number, gW: number, gH: number,
@@ -351,7 +448,6 @@ function drawGrid(
     ctx.fillText(tick + 'x', pL - 5, y + 4);
   }
 
-  // Baseline
   ctx.beginPath();
   ctx.moveTo(pL, pT + gH); ctx.lineTo(pL + gW, pT + gH);
   ctx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -369,7 +465,7 @@ function drawPlane(
   ctx.save();
   ctx.scale(scale, scale);
 
-  // ── Engine flame / exhaust ──────────────────────────────
+  // Engine flame
   const flicker = 0.8 + Math.sin(tick * 0.018) * 0.2;
   ctx.save();
   ctx.globalAlpha = flicker;
@@ -392,7 +488,7 @@ function drawPlane(
   ctx.fill();
   ctx.restore();
 
-  // ── Drop shadow ─────────────────────────────────────────
+  // Drop shadow
   ctx.save();
   ctx.globalAlpha = 0.2;
   ctx.fillStyle = '#000';
@@ -401,7 +497,7 @@ function drawPlane(
   ctx.fill();
   ctx.restore();
 
-  // ── Upper wing ──────────────────────────────────────────
+  // Upper wing
   ctx.beginPath();
   ctx.moveTo(8, -5);
   ctx.bezierCurveTo(14, -13, 26, -29, 34, -31);
@@ -412,7 +508,7 @@ function drawPlane(
   ctx.fillStyle = wg; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.6; ctx.stroke();
 
-  // ── Lower wing ──────────────────────────────────────────
+  // Lower wing
   ctx.beginPath();
   ctx.moveTo(8, 5);
   ctx.bezierCurveTo(14, 13, 26, 29, 34, 31);
@@ -420,7 +516,7 @@ function drawPlane(
   ctx.closePath();
   ctx.fillStyle = wg; ctx.fill(); ctx.stroke();
 
-  // ── Vertical tail ───────────────────────────────────────
+  // Vertical tail
   ctx.beginPath();
   ctx.moveTo(-26, -5);
   ctx.bezierCurveTo(-24, -16, -17, -24, -13, -24);
@@ -428,7 +524,7 @@ function drawPlane(
   ctx.closePath();
   ctx.fillStyle = '#6678a8'; ctx.fill();
 
-  // ── Horizontal stabilisers ──────────────────────────────
+  // Horizontal stabilisers
   ctx.beginPath();
   ctx.moveTo(-28, 4);
   ctx.bezierCurveTo(-26, 10, -20, 14, -16, 14);
@@ -436,7 +532,7 @@ function drawPlane(
   ctx.closePath();
   ctx.fillStyle = '#6678a8'; ctx.fill();
 
-  // ── Fuselage ────────────────────────────────────────────
+  // Fuselage
   ctx.beginPath();
   ctx.moveTo(42, 0);
   ctx.bezierCurveTo(32, -8, -6, -8, -30, -5);
@@ -449,12 +545,10 @@ function drawPlane(
   ctx.fillStyle = fg; ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.5; ctx.stroke();
 
-  // Fuselage top highlight
   ctx.beginPath();
   ctx.ellipse(6, -3.5, 20, 2.5, -0.05, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.fill();
 
-  // Accent livery stripe
   ctx.beginPath();
   ctx.moveTo(-18, -5.8); ctx.lineTo(34, -5.8);
   ctx.strokeStyle = accent + '99'; ctx.lineWidth = 1.8; ctx.stroke();
@@ -462,21 +556,20 @@ function drawPlane(
   ctx.moveTo(-22, -4.0); ctx.lineTo(36, -4.0);
   ctx.strokeStyle = accent + '44'; ctx.lineWidth = 0.8; ctx.stroke();
 
-  // ── Nose ────────────────────────────────────────────────
+  // Nose
   ctx.beginPath();
   ctx.moveTo(42, 0);
   ctx.bezierCurveTo(50, -2, 57, -1, 59, 0);
   ctx.bezierCurveTo(57, 1, 50, 2, 42, 0);
   ctx.fillStyle = '#d0dcf0'; ctx.fill();
 
-  // ── Engine nacelle ──────────────────────────────────────
+  // Engine nacelle
   ctx.beginPath();
   ctx.ellipse(4, 1, 11, 5.5, 0, 0, Math.PI * 2);
   const eng = ctx.createLinearGradient(4, -5, 4, 7);
   eng.addColorStop(0, '#889ab8'); eng.addColorStop(1, '#445566');
   ctx.fillStyle = eng; ctx.fill();
 
-  // Engine intake ring
   ctx.beginPath();
   ctx.ellipse(-5, 0, 4.5, 4.5, 0, 0, Math.PI * 2);
   ctx.fillStyle = '#1a2233'; ctx.fill();
@@ -484,7 +577,7 @@ function drawPlane(
   ctx.ellipse(-5, 0, 3.2, 3.2, 0, 0, Math.PI * 2);
   ctx.fillStyle = '#0d1520'; ctx.fill();
 
-  // ── Cockpit ─────────────────────────────────────────────
+  // Cockpit
   const wn = ctx.createRadialGradient(26, -2, 0, 26, -2, 9);
   wn.addColorStop(0, '#c8f8ff'); wn.addColorStop(0.35, '#38aaee'); wn.addColorStop(1, '#003488cc');
   ctx.beginPath();
@@ -494,22 +587,20 @@ function drawPlane(
   ctx.ellipse(23, -4, 4, 2, -0.3, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
 
-  // ── Spinning propeller ──────────────────────────────────
-  // Hub
+  // Propeller hub
   ctx.beginPath();
   ctx.arc(59, 0, 4, 0, Math.PI * 2);
   const hub = ctx.createRadialGradient(58, -1, 0, 59, 0, 4);
   hub.addColorStop(0, '#d0d8e8'); hub.addColorStop(1, '#6677aa');
   ctx.fillStyle = hub; ctx.fill();
 
-  // 3-blade propeller
+  // Blades
   ctx.save();
   ctx.translate(59, 0);
   ctx.rotate(propAngle);
   for (let b = 0; b < 3; b++) {
     ctx.save();
     ctx.rotate((b / 3) * Math.PI * 2);
-    // Blade shape
     ctx.beginPath();
     ctx.moveTo(0, -3);
     ctx.bezierCurveTo(3, -8, 4, -18, 2, -24);
@@ -525,7 +616,6 @@ function drawPlane(
   }
   ctx.restore();
 
-  // Prop centre cap
   ctx.beginPath();
   ctx.arc(59, 0, 2.5, 0, Math.PI * 2);
   ctx.fillStyle = '#c8d8f0'; ctx.fill();
