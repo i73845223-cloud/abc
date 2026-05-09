@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Bet, GamePhase } from './game';
 import { fmtMult } from './game-logic';
+import { formatter } from '@/lib/utils';
 
 interface Props {
   bet: Bet;
@@ -23,7 +24,6 @@ export function BetPanel({
   const [raw, setRaw]       = useState('100');
   const [submitting, setSubmitting] = useState(false);
 
-  // Guard prevents multiple clicks while processing
   const guard = (fn: () => void | Promise<void>) => async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -156,7 +156,7 @@ export function BetPanel({
           <button key={v} disabled={inputLocked}
             style={S.presetBtn(safeAmount === v)}
             onClick={() => !inputLocked && commit(v)}>
-            ₹{v}
+            {formatter.format(v)}
           </button>
         ))}
       </div>
@@ -179,7 +179,7 @@ export function BetPanel({
               transition: 'all .2s',
             }}
           >
-            Place Bet  {safeAmount > 0 ? formatRupee(safeAmount) : ''}
+            Place Bet  {safeAmount > 0 ? formatter.format(safeAmount) : ''}
           </button>
         )}
 
@@ -191,7 +191,7 @@ export function BetPanel({
               background: 'rgba(0,232,122,0.1)', color: '#00e87a',
               border: '1px solid rgba(0,232,122,0.3)',
             }}>
-              {formatRupee(bet.amount)} BET ✓
+              {formatter.format(bet.amount)} BET ✓
             </div>
             <button onClick={guard(onCancelBet)} disabled={submitting} style={{
               padding: '13px 16px', borderRadius: 12, cursor: submitting ? 'not-allowed' : 'pointer',
@@ -212,7 +212,7 @@ export function BetPanel({
             animation: 'av-cashout-pulse 1.1s ease-in-out infinite',
           }}>
             <div style={{ fontSize: 10, letterSpacing: 3, paddingTop: 10, opacity: 0.85 }}>CASH OUT</div>
-            <div style={{ fontSize: 22, paddingBottom: 8 }}>{formatRupee(potential)}</div>
+            <div style={{ fontSize: 22, paddingBottom: 8 }}>{formatter.format(potential)}</div>
           </button>
         )}
 
@@ -230,7 +230,7 @@ export function BetPanel({
             fontFamily: "'Orbitron',monospace", fontWeight: 700, fontSize: 12,
             background: 'rgba(0,232,122,0.08)', color: '#00e87a',
             border: '1px solid rgba(0,232,122,0.22)',
-          }}>Cashed @ {fmtMult(bet.cashedOutAt!)}</div>
+          }}>Cashed @ {formatter.format(bet.cashedOutAt!)}</div>
         )}
 
         {isCrashed && (lost || cashedOut) && (
@@ -241,7 +241,7 @@ export function BetPanel({
             color: lost ? '#ff4d6d' : '#00e87a',
             border: `1px solid ${lost ? 'rgba(255,77,109,0.25)' : 'rgba(0,232,122,0.25)'}`,
           }}>
-            {lost ? `Lost ${formatRupee(bet.amount)}` : `Won +${formatRupee(bet.profit!)}`}
+            {lost ? `Lost ${formatter.format(bet.amount)}` : `Won +${formatter.format(bet.profit!)}`}
           </div>
         )}
 
@@ -265,7 +265,7 @@ export function BetPanel({
                   border: `1px solid ${safeAmount > 0 && safeAmount <= balance ? 'rgba(96,239,255,0.3)' : 'rgba(255,255,255,0.05)'}`,
                 }}
               >
-                Queue {formatRupee(safeAmount)}
+                Queue {formatter.format(safeAmount)}
               </button>
             ) : (
               <div style={{ display: 'flex', gap: 6 }}>
@@ -275,7 +275,7 @@ export function BetPanel({
                   background: 'rgba(96,239,255,0.08)', color: '#60efff',
                   border: '1px solid rgba(96,239,255,0.25)',
                 }}>
-                  {formatRupee(nextBet.amount)} Queued ✓
+                  {formatter.format(nextBet.amount)} Queued ✓
                 </div>
                 <button onClick={guard(onCancelBet)} disabled={submitting} style={{
                   padding: '10px 12px', borderRadius: 10, cursor: submitting ? 'not-allowed' : 'pointer',

@@ -2,13 +2,12 @@
 import { useReducer, useEffect, useRef, useCallback } from 'react';
 import { reducer, initialState } from '@/app/[locale]/(games)/instant/aviator/reducer';
 import { useBalance } from '@/actions/use-balance';
-import { GameState } from '@/app/[locale]/(games)/instant/aviator/game';
 
 export function useRealAviator() {
   const { balance, getBalance, updateUserBalance } = useBalance();
   const [state, dispatch] = useReducer(reducer, {
     ...initialState,
-    balance: 0,          // will be updated
+    balance: 0,
   });
 
   const phaseRef = useRef(state.phase);
@@ -18,14 +17,12 @@ export function useRealAviator() {
   const lastTsRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep balance in sync
   useEffect(() => {
     if (balance !== undefined) {
       dispatch({ type: 'SET_BALANCE', amount: balance });
     }
   }, [balance]);
 
-  // ─── Game loop ──────────────────────────────────────────────
   const startLoop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     lastTsRef.current = null;
@@ -39,7 +36,6 @@ export function useRealAviator() {
     rafRef.current = requestAnimationFrame(tick);
   }, []);
 
-  // ─── Countdown → START_ROUND ────────────────────────────────
   const startCountdown = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     let remaining = 5;
@@ -47,7 +43,6 @@ export function useRealAviator() {
       remaining -= 1;
       if (remaining <= 0) {
         dispatch({ type: 'START_ROUND' });
-        // Small buffer so state settles
         timerRef.current = setTimeout(() => startLoop(), 60);
       } else {
         dispatch({ type: 'COUNTDOWN_TICK' });
@@ -57,7 +52,6 @@ export function useRealAviator() {
     timerRef.current = setTimeout(tick, 1000);
   }, [startLoop]);
 
-  // ─── Crash → next round ────────────────────────────────────
   useEffect(() => {
     if (state.phase === 'crashed') {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -66,9 +60,7 @@ export function useRealAviator() {
     }
   }, [state.phase, startCountdown]);
 
-  // ─── Boot ──────────────────────────────────────────────────
   useEffect(() => {
-    // Fetch balance, then start the game
     getBalance().then(() => startCountdown());
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -76,7 +68,6 @@ export function useRealAviator() {
     };
   }, []);
 
-  // ─── Actions ───────────────────────────────────────────────
   const placeBet = useCallback(async (betId: 1 | 2, amount: number) => {
     if (amount <= 0 || amount > state.balance) return;
     try {
@@ -95,7 +86,6 @@ export function useRealAviator() {
         dispatch({ type: 'PLACE_NEXT_BET', betId, amount });
         dispatch({ type: 'BET_TRANSACTION_READY', betId, transactionId: data.transactionId });
       }
-      // Local balance already deducted by reducer
     } catch (error) {
       console.error('Bet error:', error);
     }
@@ -118,7 +108,6 @@ export function useRealAviator() {
       } else {
         dispatch({ type: 'CANCEL_NEXT_BET', betId });
       }
-      // Balance refunded by reducer
     } catch (error) {
       console.error('Cancel error:', error);
     }

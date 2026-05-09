@@ -1,4 +1,3 @@
-// app/api/aviator/bet/route.ts
 import { NextResponse } from 'next/server';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -16,13 +15,10 @@ export async function POST(req: Request) {
 
     const balanceCache = BalanceCache.getInstance();
     const availableBalance = await balanceCache.getBalance(user.id);
-    // Optional: also subtract any existing pending bets from the same user
-    // For simplicity we just check raw balance – later we'll add a local reserve
     if (availableBalance < amount) {
       return new NextResponse('Insufficient funds', { status: 400 });
     }
 
-    // Create a pending withdrawal transaction
     const transaction = await db.transaction.create({
       data: {
         userId: user.id,

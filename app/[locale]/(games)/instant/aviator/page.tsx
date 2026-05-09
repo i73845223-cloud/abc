@@ -5,10 +5,19 @@ import { FlightGraph } from '@/app/[locale]/(games)/instant/aviator/flight-graph
 import { BetPanel } from '@/app/[locale]/(games)/instant/aviator/bet-panel';
 import { HistoryBar } from '@/app/[locale]/(games)/instant/aviator/history-bar';
 import { fmtMoney } from '@/app/[locale]/(games)/instant/aviator/game-logic';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ChevronLeftCircle } from 'lucide-react';
+import { Montserrat } from 'next/font/google';
+import { useRouter } from 'next/navigation';
+import { formatter } from '@/lib/utils';
+
+const montserrat = Montserrat({ subsets: ['latin'] })
 
 export default function RealAviatorPage() {
   const { state, placeBet, cancelBet, cashOut } = useRealAviator();
   const { phase, multiplier, bets, nextRoundBets, balance, history, countdown } = state;
+  const router = useRouter();
 
   const dotColor =
     phase === 'flying'  ? '#00e87a' :
@@ -111,12 +120,23 @@ export default function RealAviatorPage() {
 
       <div className="av">
         <header className="av-header">
-          <div style={{
-            fontFamily: "'Orbitron',monospace", fontWeight: 900,
-            fontSize: 'clamp(13px,3.5vw,20px)', letterSpacing: 2,
-            background: 'linear-gradient(90deg,#60efff,#ff3cac)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>✈ AVIATOR</div>
+          <div className='flex gap-5'>
+            <button onClick={() => router.back()} className="text-white sm:text-red-600 sm:hover:text-gray-200 hover:text-red-700 transition-colors">
+              <ChevronLeftCircle size={36} />
+            </button>
+            <Link href="/" className="hidden sm:flex gap-2 items-center text-3xl font-bold text-red-600">
+                <Image
+                    src="/logo.svg"
+                    alt="logo"
+                    width="35"
+                    height="35"
+                    priority
+                />
+                <div className={montserrat.className}>
+                    <span className="hidden sm:inline">alt.win</span>
+                </div>
+            </Link>
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -134,7 +154,7 @@ export default function RealAviatorPage() {
               padding: '5px 12px', borderRadius: 20,
               background: 'rgba(0,232,122,0.1)', color: '#00e87a',
               border: '1px solid rgba(0,232,122,0.25)',
-            }}>{fmtMoney(balance)}</div>
+            }}>{formatter.format(balance)}</div>
           </div>
         </header>
 

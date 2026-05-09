@@ -1,8 +1,6 @@
-// app/api/aviator/bet/cancel/route.ts
 import { NextResponse } from 'next/server';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { BalanceCache } from '@/lib/cached-balance';
 
 export async function PUT(req: Request) {
   try {
@@ -22,7 +20,6 @@ export async function PUT(req: Request) {
       data: { status: 'fail' },
     });
 
-    // No balance change – the bet was never taken from available funds
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[BET_CANCEL_ERROR]', error);

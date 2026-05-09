@@ -1,4 +1,3 @@
-// app/api/aviator/cashout/route.ts
 import { NextResponse } from 'next/server';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -27,19 +26,15 @@ export async function POST(request: Request) {
         throw new Error('Invalid bet transaction');
       }
 
-      // Convert Decimal to number
       const betAmount = Number(betTransaction.amount);
 
-      // Mark bet transaction as success
       await tx.transaction.update({
         where: { id: transactionId },
         data: { status: 'success' },
       });
 
-      // Deduct the bet amount from balance
       await balanceCache.updateBalance(userId, betAmount, 'withdrawal');
 
-      // Create win deposit transaction
       const winTx = await tx.transaction.create({
         data: {
           userId,
@@ -51,10 +46,8 @@ export async function POST(request: Request) {
         },
       });
 
-      // Add winnings to balance
       await balanceCache.updateBalance(userId, totalWinnings, 'deposit');
 
-      // Influencer commission (if any)
       const userPromo = await tx.userPromoCode.findFirst({
         where: { userId },
         include: { promoCode: { include: { assignedUser: true } } },

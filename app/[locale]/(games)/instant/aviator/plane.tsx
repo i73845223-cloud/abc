@@ -20,7 +20,6 @@ export function Plane({ x, y, crashed, multiplier }: PlaneProps) {
         opacity: crashed ? 0 : 1,
       }}
     >
-      {/* Glow effect */}
       <defs>
         <filter id="planeGlow">
           <feGaussianBlur stdDeviation="8" result="coloredBlur" />

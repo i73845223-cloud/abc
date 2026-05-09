@@ -1,4 +1,3 @@
-// app/[locale]/(games)/instant/aviator/game.ts
 export type GamePhase = 'waiting' | 'flying' | 'crashed';
 export type BetStatus = 'idle' | 'placed' | 'cashed_out' | 'lost';
 

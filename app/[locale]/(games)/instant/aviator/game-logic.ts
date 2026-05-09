@@ -1,16 +1,10 @@
-/**
- * RTP ~90% crash point generator.
- * E[multiplier] = integral from 1 to inf of x * pdf(x) dx
- * Using: crash = 0.90 / (1 - r), gives house edge ~10% → RTP 90%
- */
 export function generateCrashPoint(): number {
   const r = Math.random();
-  if (r >= 0.9) return 1.0; // 10% instant crash at 1x
+  if (r >= 0.9) return 1.0;
   const crash = 0.90 / (1 - r);
   return Math.max(1.0, Math.floor(crash * 100) / 100);
 }
 
-/** Smooth exponential multiplier growth: 1x→2x in ~7s, 1x→10x in ~25s */
 export function growMultiplier(current: number, deltaMs: number): number {
   const rate = 0.000048 * Math.pow(current, 1.10);
   return current + rate * deltaMs;

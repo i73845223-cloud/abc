@@ -1,4 +1,3 @@
-// app/[locale]/(games)/instant/aviator/reducer.ts
 import { GameState, GameAction, Bet } from './game';
 import { generateCrashPoint, growMultiplier } from './game-logic';
 

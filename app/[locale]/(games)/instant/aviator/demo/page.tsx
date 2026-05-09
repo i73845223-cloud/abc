@@ -5,10 +5,19 @@ import { FlightGraph } from '../flight-graph';
 import { BetPanel } from '../bet-panel';
 import { HistoryBar } from '../history-bar';
 import { fmtMoney } from '../game-logic';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Montserrat } from 'next/font/google';
+import { formatter } from '@/lib/utils';
+import { ChevronLeftCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+const montserrat = Montserrat({ subsets: ['latin'] })
 
 export default function AviatorGame() {
   const { state, placeBet, cancelBet, cashOut } = useGame();
   const { phase, multiplier, bets, nextRoundBets, balance, history, countdown } = state;
+  const router = useRouter();
 
   const dotColor =
     phase === 'flying'  ? '#00e87a' :
@@ -136,14 +145,24 @@ export default function AviatorGame() {
       `}</style>
 
       <div className="av">
-        {/* Header */}
         <header className="av-header">
-          <div style={{
-            fontFamily: "'Orbitron',monospace", fontWeight: 900,
-            fontSize: 'clamp(13px,3.5vw,20px)', letterSpacing: 2,
-            background: 'linear-gradient(90deg,#60efff,#ff3cac)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>✈ AVIATOR</div>
+          <div className='flex gap-5'>
+            <button onClick={() => router.back()} className="text-white sm:text-red-600 sm:hover:text-gray-200 hover:text-red-700 transition-colors">
+              <ChevronLeftCircle size={36} />
+            </button>
+            <Link href="/" className="hidden sm:flex gap-2 items-center text-3xl font-bold text-red-600">
+                <Image
+                    src="/logo.svg"
+                    alt="logo"
+                    width="35"
+                    height="35"
+                    priority
+                />
+                <div className={montserrat.className}>
+                    <span className="hidden sm:inline">alt.win</span>
+                </div>
+            </Link>
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -161,18 +180,16 @@ export default function AviatorGame() {
               padding: '5px 12px', borderRadius: 20,
               background: 'rgba(0,232,122,0.1)', color: '#00e87a',
               border: '1px solid rgba(0,232,122,0.25)',
-            }}>{fmtMoney(balance)}</div>
+            }}>{formatter.format(balance)}</div>
           </div>
         </header>
 
-        {/* History */}
         {history.length > 0 && (
           <div className="av-history">
             <HistoryBar history={history} />
           </div>
         )}
 
-        {/* Body */}
         <div className="av-body">
           <div className="av-graph">
             <FlightGraph phase={phase} multiplier={multiplier} countdown={countdown} />
