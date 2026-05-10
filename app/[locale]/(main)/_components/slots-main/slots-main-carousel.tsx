@@ -6,6 +6,12 @@ import { SLOT_GAME_IMAGES } from '@/lib/images'
 
 const slotGames = [
   {
+    name: "Galaxy Diving",
+    image: SLOT_GAME_IMAGES.galaxyDiving,
+    href: "/instant/galaxy-diving",
+    demoHref: "/instant/galaxy-diving/demo"
+  },
+  {
     name: "Neon Shinjuku",
     image: SLOT_GAME_IMAGES.neonShinjuku,
     href: "/slots/neon-shinjuku",

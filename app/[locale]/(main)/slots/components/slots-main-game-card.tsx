@@ -23,8 +23,8 @@ export default function SlotGameCard({ game }: SlotGameCardProps) {
       <Image
         className="rounded-xl transition-opacity group-hover:opacity-75"
         src={game.image}
-        width={400}
-        height={400}
+        width={300}
+        height={300}
         alt={t('gamePreviewAltAll')}
       />
       <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl border-2 border-red-600">

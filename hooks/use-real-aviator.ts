@@ -1,7 +1,7 @@
 'use client';
 import { useReducer, useEffect, useRef, useCallback } from 'react';
-import { reducer, initialState } from '@/app/[locale]/(games)/instant/aviator/reducer';
 import { useBalance } from '@/actions/use-balance';
+import { initialState, reducer } from '@/app/[locale]/(games)/instant/galaxy-diving/reducer';
 
 export function useRealAviator() {
   const { balance, getBalance, updateUserBalance } = useBalance();

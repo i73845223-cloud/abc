@@ -14,6 +14,7 @@ export const BANNER_IMAGES = {
 } as const;
 
 export const SLOT_GAME_IMAGES = {
+  galaxyDiving: getImageUrl('galaxy-diving/preview.webp'),
   neonShinjuku: getImageUrl('neon-shinjuku/preview.webp'),
   maestro: getImageUrl('maestro/preview.webp'),
   villagersDream: getImageUrl('villagers-dream/preview.webp'),

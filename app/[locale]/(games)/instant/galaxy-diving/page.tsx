@@ -1,16 +1,15 @@
 'use client';
 import React from 'react';
 import { useRealAviator } from '@/hooks/use-real-aviator';
-import { FlightGraph } from '@/app/[locale]/(games)/instant/aviator/flight-graph';
-import { BetPanel } from '@/app/[locale]/(games)/instant/aviator/bet-panel';
-import { HistoryBar } from '@/app/[locale]/(games)/instant/aviator/history-bar';
-import { fmtMoney } from '@/app/[locale]/(games)/instant/aviator/game-logic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeftCircle } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { formatter } from '@/lib/utils';
+import { HistoryBar } from './history-bar';
+import { FlightGraph } from './flight-graph';
+import { BetPanel } from './bet-panel';
 
 const montserrat = Montserrat({ subsets: ['latin'] })
 
