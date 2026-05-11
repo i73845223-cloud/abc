@@ -44,7 +44,7 @@ export const register = async (
       where: { id: user.id },
       data: { partnerClickId },
     });
-    await sendRegistrationPostback(partnerClickId);
+    // await sendRegistrationPostback(partnerClickId);
   }
 
   if (ref) {
