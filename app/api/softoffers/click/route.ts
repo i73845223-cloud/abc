@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  await sendClickPostback(clickId);
+  // await sendClickPostback(clickId);
 
   const response = NextResponse.json({ success: true });
   response.cookies.set("softoffers_click_fired", "1", {
