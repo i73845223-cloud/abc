@@ -3,10 +3,12 @@
 import { db } from "@/lib/db";
 import * as z from "zod";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 
 import { RegisterSchema } from "@/schemas";
 import { getUserByEmail } from "@/data/user";
 import { createBonusFromPromoCode } from "@/lib/bonus-utils";
+import { sendRegistrationPostback } from "@/lib/softoffers";
 
 export const register = async (
   values: z.infer<typeof RegisterSchema>,
@@ -35,6 +37,15 @@ export const register = async (
       emailVerified: new Date(),
     },
   });
+
+  const partnerClickId = (await cookies()).get("partnerClickId")?.value || null;
+  if (partnerClickId) {
+    await db.user.update({
+      where: { id: user.id },
+      data: { partnerClickId },
+    });
+    await sendRegistrationPostback(partnerClickId);
+  }
 
   if (ref) {
     const promoCode = await db.promoCode.findFirst({

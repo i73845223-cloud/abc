@@ -23,6 +23,8 @@ export default auth((req) => {
     sameSite: "lax" as const,
   }
 
+  const partnerClickId = nextUrl.searchParams.get("sub1") || nextUrl.searchParams.get("clickid");
+
   const rPathMatch = nextUrl.pathname.match(/^(\/(en|hi))?\/r\/([A-Z0-9]+)$/)
   if (rPathMatch) {
     const localePrefix = rPathMatch[1] || ''
@@ -30,6 +32,10 @@ export default auth((req) => {
     const registerUrl = new URL(`${localePrefix}/register?ref=${code}`, nextUrl)
     const response = NextResponse.redirect(registerUrl)
     response.cookies.set("affiliate_ref", code, cookieOptions)
+    response.cookies.set("promo_code", code, cookieOptions)
+    if (partnerClickId) {
+      response.cookies.set("partnerClickId", partnerClickId, cookieOptions)
+    }
     return response
   }
 
@@ -77,6 +83,10 @@ export default auth((req) => {
     response.cookies.set("affiliate_ref", ref, cookieOptions)
   }
 
+  if (partnerClickId && response) {
+    response.cookies.set("partnerClickId", partnerClickId, cookieOptions)
+  }
+
   return response
 })
 
@@ -84,4 +94,4 @@ export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico|logo.svg|uploads/).*)'
   ]
-};
+}

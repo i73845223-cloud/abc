@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { db } from '@/lib/db';
 import { BalanceCache } from '@/lib/cached-balance';
 import { CryptoPaymentStatus, TransactionStatus } from '@prisma/client';
+import { sendDepositPostback } from '@/lib/softoffers';
 
 export async function POST(req: Request) {
   try {
@@ -49,6 +50,15 @@ export async function POST(req: Request) {
         await activateDepositBonuses(db, cryptoPayment.userId, Number(cryptoPayment.baseAmount));
         BalanceCache.getInstance().invalidateCache(cryptoPayment.userId);
         console.log(`Deposit succeeded for user ${cryptoPayment.userId}`);
+
+        const user = await db.user.findUnique({
+          where: { id: cryptoPayment.userId },
+          select: { partnerClickId: true },
+        });
+        if (user?.partnerClickId) {
+          await sendDepositPostback(user.partnerClickId);
+        }
+
       } else if ((normalizedStatus === 'failed' || normalizedStatus === 'expired') && cryptoPayment.transaction?.status !== TransactionStatus.fail) {
         console.log(`[WEBHOOK] Updating transaction ${cryptoPayment.transactionId} to fail`);
         await db.transaction.update({
@@ -114,18 +124,6 @@ async function activateDepositBonuses(tx: any, userId: string, depositAmount: nu
           activatedAt: new Date(),
         },
       });
-
-      // await tx.transaction.create({
-      //   data: {
-      //     userId,
-      //     type: 'deposit',
-      //     amount: bonusAmount,
-      //     status: 'success',
-      //     description: `Bonus credit from ${bonus.promoCode?.code || 'promo code'}`,
-      //     category: 'bonus',
-      //     bonusId: bonus.id,
-      //   },
-      // });
     }
   }
 }
