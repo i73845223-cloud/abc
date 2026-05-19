@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { TrendingUp, TrendingDown, X, IndianRupee } from 'lucide-react'
+import { TrendingUp, TrendingDown, X, DollarSign } from 'lucide-react'
 import { formatter } from '@/lib/utils'
 import { useBalanceContext } from '@/contexts/balance-context'
 import { toast } from 'sonner'
@@ -158,7 +158,7 @@ export default function MyBetsTab({ initialBets, bookId }: MyBetsTabProps) {
       <CardContent className='p-2 sm:p-6 -mt-5 sm:mt-0'>
         {bets.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <IndianRupee className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>{t('noBetsOnBook')}</p>
           </div>
         ) : (

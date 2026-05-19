@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { IndianRupee, CreditCard, Smartphone, QrCode, Shield, Zap } from 'lucide-react';
+import { CreditCard, Smartphone, QrCode, Shield, Zap, DollarSign } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function DepositForm() {
@@ -47,14 +47,14 @@ export function DepositForm() {
               className="h-12"
               onClick={() => setAmount(quickAmount.toString())}
             >
-              <IndianRupee className="h-4 w-4 mr-1" />
+              <DollarSign className="h-4 w-4 mr-1" />
               {quickAmount.toLocaleString('en-IN')}
             </Button>
           ))}
         </div>
 
         <div className="relative">
-          <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="amount"
             type="number"

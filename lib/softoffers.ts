@@ -1,4 +1,4 @@
-const BASE_URL = "https://offers-softoffers.affise.com/postback";
+const BASE_URL = "123"; //"https://offers-softoffers.affise.com/postback"
 
 export async function sendSoftoffersPostback(clickId: string, goal: string) {
   if (!clickId) return;

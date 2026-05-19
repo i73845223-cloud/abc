@@ -1,9 +1,9 @@
 import { GAME_ASSETS } from '@/lib/game-assets';
 
 export const ANIMATION_DURATION = 1500;
-export const MIN_BET = 10;
-export const MAX_BET = 10000;
-export const PRESET_BETS = [100, 500, 1000, 5000];
+export const MIN_BET = 1;
+export const MAX_BET = 1000;
+export const PRESET_BETS = [10, 50, 100, 500];
 export const AUTO_SPIN_OPTIONS = [5, 10, 20, 50, 100, 1000];
 
 const gameAssets = GAME_ASSETS.rupeeRush;

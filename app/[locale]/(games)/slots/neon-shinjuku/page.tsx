@@ -370,7 +370,7 @@ const SlotMachine = () => {
     processSpin
   } = useBalance();
 
-  const [bet, setBet] = useState<number>(100);
+  const [bet, setBet] = useState<number>(10);
   const [reels, setReels] = useState(() =>
     Array.from({ length: 5 }, () => Array(3).fill(null).map(() => getRandomSymbol()))
   );
@@ -688,8 +688,8 @@ const SlotMachine = () => {
           await processSpin(bet, payout);
           if (payout > 0) {
             playSound("win");
-            const coinCount = isLowEnd ? 4 : payout > 1000 ? 16 : 8;
-            const confettiCount = payout > 1000 && !isLowEnd ? 30 : 0;
+            const coinCount = isLowEnd ? 4 : payout > 100 ? 16 : 8;
+            const confettiCount = payout > 100 && !isLowEnd ? 30 : 0;
             const colors = ["#ffd700", "#ff4f9a", "#00e5ff", "#aaff00", "#ff6b00", "#ffffff"];
 
             setCelebration({

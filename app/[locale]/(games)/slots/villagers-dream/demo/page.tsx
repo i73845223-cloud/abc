@@ -41,8 +41,8 @@ type Position = {
 const SlotMachine = () => {
   const router = useRouter();
   
-  const [balance, setBalance] = useState<number>(100000);
-  const [bet, setBet] = useState<number>(100);
+  const [balance, setBalance] = useState<number>(10000);
+  const [bet, setBet] = useState<number>(10);
   const [reels, setReels] = useState(() => 
     Array.from({ length: 5 }, () => Array(3).fill(null).map(() => getRandomSymbol()))
   );

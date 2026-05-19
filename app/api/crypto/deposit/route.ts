@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { currentUser } from '@/lib/auth';
 import { createPayment } from '@/lib/nowpayments';
-import { inrToUsd } from '@/lib/currency-converter';
 import { BalanceCache } from '@/lib/cached-balance';
 import { TransactionStatus } from '@prisma/client';
 
@@ -13,13 +12,13 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { amountInr, currency } = await req.json();
+    const { amountUsd, currency } = await req.json();
 
-    if (!amountInr || amountInr <= 0 || !currency) {
+    if (!amountUsd || amountUsd <= 0 || !currency) {
       return new NextResponse('Invalid amount or currency', { status: 400 });
     }
 
-    const usdAmount = await inrToUsd(amountInr);
+    const usdAmount = Number(amountUsd);
     const orderId = `deposit_${user.id}_${Date.now()}`;
 
     const payment = await createPayment({
@@ -41,8 +40,8 @@ export async function POST(req: Request) {
           payAmount: payment.pay_amount,
           priceAmount: payment.price_amount,
           priceCurrency: payment.price_currency,
-          baseAmount: amountInr,
-          baseCurrency: 'INR',
+          baseAmount: usdAmount,
+          baseCurrency: 'USD',
           expiresAt: payment.expiration_estimate_date
             ? new Date(payment.expiration_estimate_date)
             : null,
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
         data: {
           userId: user.id,
           type: 'deposit',
-          amount: amountInr,
+          amount: usdAmount,
           status: TransactionStatus.pending,
           description: `Pending crypto deposit via ${payment.pay_currency.toUpperCase()}`,
           category: 'transaction',
@@ -78,7 +77,7 @@ export async function POST(req: Request) {
       qrCode: payment.qr_code,
       amount: result.cryptoPayment.payAmount,
       currency: result.cryptoPayment.payCurrency,
-      amountInr: result.cryptoPayment.baseAmount,
+      amountUsd: result.cryptoPayment.baseAmount,
       expiresAt: result.cryptoPayment.expiresAt,
     });
   } catch (error) {

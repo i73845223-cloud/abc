@@ -20,8 +20,8 @@ export function BetPanel({
   bet, nextBet, phase, balance, label, multiplier,
   onPlaceBet, onCancelBet, onCashOut,
 }: Props) {
-  const [amount, setAmount] = useState(100);
-  const [raw, setRaw]       = useState('100');
+  const [amount, setAmount] = useState(10);
+  const [raw, setRaw]       = useState('10');
   const [submitting, setSubmitting] = useState(false);
 
   const guard = (fn: () => void | Promise<void>) => async () => {
@@ -40,13 +40,13 @@ export function BetPanel({
 
   const inputLocked = (isWaiting && betPlaced) || ((isFlying || isCrashed) && nextQueued) || submitting;
 
-  const safeAmount = Math.max(100, Math.min(amount, balance, 10000));
+  const safeAmount = Math.max(1, Math.min(amount, balance, 10000));
   const potential  = betPlaced ? bet.amount * multiplier : 0;
 
-  const formatRupee = (v: number) => '₹' + v.toFixed(2);
+  const formatRupee = (v: number) => '$' + v.toFixed(2);
 
   function commit(v: number) {
-    const clamped = Math.max(100, Math.min(v, balance, 10000));
+    const clamped = Math.max(1, Math.min(v, balance, 10000));
     setAmount(clamped);
     setRaw(clamped.toFixed(2));
   }
@@ -117,7 +117,7 @@ export function BetPanel({
     }),
   } as const;
 
-  const PRESETS = [100, 500, 1000, 5000];
+  const PRESETS = [10, 50, 100, 500];
 
   return (
     <div style={S.panel}>
@@ -136,9 +136,9 @@ export function BetPanel({
       </div>
 
       <div style={S.inputRow}>
-        <span style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', fontSize: 15 }}>₹</span>
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', fontSize: 15 }}>$</span>
         <input
-          type="number" min="100" max="10000" step="100"
+          type="number" min="1" max="1000" step="100"
           value={raw}
           onChange={handleRawChange}
           onBlur={handleRawBlur}

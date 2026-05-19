@@ -31,7 +31,7 @@ export interface BettingSlipProps {
   onBetPlaced: () => void
 }
 
-const QUICK_BET_AMOUNTS = [100, 500, 1000, 5000]
+const QUICK_BET_AMOUNTS = [10, 50, 100, 500]
 
 const safeParseNumber = (value: string, t: (key: string) => string): { success: boolean; value: number; error?: string } => {
   if (!value || value.trim() === '') {
@@ -278,7 +278,7 @@ export default function BettingSlip({ isOpen, onClose, outcome, onBetPlaced }: B
                     className="bg-background hover:bg-accent"
                     disabled={isSubmitting || amount > userBalance}
                   >
-                    ₹ {amount}
+                    $ {amount}
                   </Button>
                 ))}
               </div>

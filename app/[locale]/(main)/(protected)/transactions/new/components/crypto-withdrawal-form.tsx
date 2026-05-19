@@ -32,7 +32,7 @@ const currencyOptions = [
   { value: 'trx', display: 'TRX', tokenImage: CRYPTO_IMAGES['tron-trx'] },
 ];
 
-export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackMinimum = 1000 }: WithdrawalFormProps) {
+export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackMinimum = 10 }: WithdrawalFormProps) {
   const t = useTranslations('Withdrawal');
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,12 +40,12 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
   const [transactionId, setTransactionId] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
-  const [dynamicMinInr, setDynamicMinInr] = useState<number | null>(null);
+  const [dynamicMinUsd, setdynamicMinUsd] = useState<number | null>(null);
   const [isLoadingMin, setIsLoadingMin] = useState(false);
-  const MAX_WITHDRAWAL = 100000;
+  const MAX_WITHDRAWAL = 10000;
 
   const withdrawalSchema = z.object({
-    amountInr: z.string().min(1, t('amountRequired')),
+    amountUsd: z.string().min(1, t('amountRequired')),
     currency: z.string().min(1, t('currencyRequired')),
     address: z.string().min(1, t('addressRequired')),
   });
@@ -54,17 +54,17 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
 
   const form = useForm<WithdrawalFormValues>({
     resolver: zodResolver(withdrawalSchema),
-    defaultValues: { amountInr: '', currency: '', address: '' },
+    defaultValues: { amountUsd: '', currency: '', address: '' },
     mode: 'onChange',
   });
 
   const selectedCurrency = form.watch('currency');
-  const amountInr = form.watch('amountInr');
+  const amountUsd = form.watch('amountUsd');
 
   useEffect(() => {
     if (!selectedCurrency) {
-      setDynamicMinInr(null);
-      form.clearErrors('amountInr');
+      setdynamicMinUsd(null);
+      form.clearErrors('amountUsd');
       return;
     }
     const fetchMinAmount = async () => {
@@ -73,14 +73,14 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
         const response = await fetch(`/api/crypto/min-amount?currency=${selectedCurrency}`);
         if (response.ok) {
           const data = await response.json();
-          const minAmount = Math.max(data.minAmountInr, fallbackMinimum);
-          setDynamicMinInr(minAmount);
+          const minAmount = Math.max(data.minAmountUsd, fallbackMinimum);
+          setdynamicMinUsd(minAmount);
         } else {
-          setDynamicMinInr(fallbackMinimum);
+          setdynamicMinUsd(fallbackMinimum);
         }
       } catch (error) {
         console.error('Failed to fetch withdrawal minimum:', error);
-        setDynamicMinInr(fallbackMinimum);
+        setdynamicMinUsd(fallbackMinimum);
       } finally {
         setIsLoadingMin(false);
       }
@@ -89,41 +89,41 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
   }, [selectedCurrency, fallbackMinimum, form]);
 
   useEffect(() => {
-    const amount = parseFloat(amountInr);
-    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    const amount = parseFloat(amountUsd);
+    const effectiveMin = dynamicMinUsd ?? fallbackMinimum;
     
-    if (!amountInr || isNaN(amount)) {
-      form.clearErrors('amountInr');
+    if (!amountUsd || isNaN(amount)) {
+      form.clearErrors('amountUsd');
       return;
     }
     
     if (amount < effectiveMin) {
-      form.setError('amountInr', { 
+      form.setError('amountUsd', { 
         type: 'manual', 
-        message: t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') }) 
+        message: t('minimumAmount', { amount: effectiveMin.toLocaleString('en-US') }) 
       });
     } else if (amount > MAX_WITHDRAWAL) {
-      form.setError('amountInr', { 
+      form.setError('amountUsd', { 
         type: 'manual', 
-        message: t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') }) 
+        message: t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-US') }) 
       });
     } else if (amount > userBalance) {
-      form.setError('amountInr', { 
+      form.setError('amountUsd', { 
         type: 'manual', 
         message: t('insufficientBalance') 
       });
     } else {
-      form.clearErrors('amountInr');
+      form.clearErrors('amountUsd');
     }
-  }, [amountInr, dynamicMinInr, userBalance, form, t, fallbackMinimum]);
+  }, [amountUsd, dynamicMinUsd, userBalance, form, t, fallbackMinimum]);
 
   const handleAmountSuggestion = (percentage: number) => {
     const suggestedAmount = (userBalance * percentage) / 100;
-    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    const effectiveMin = dynamicMinUsd ?? fallbackMinimum;
     let finalAmount = Math.max(suggestedAmount, effectiveMin);
     if (finalAmount > MAX_WITHDRAWAL) finalAmount = MAX_WITHDRAWAL;
     finalAmount = Math.round(finalAmount * 100) / 100;
-    form.setValue('amountInr', finalAmount.toString(), { shouldValidate: true });
+    form.setValue('amountUsd', finalAmount.toString(), { shouldValidate: true });
   };
 
   const handleImageError = (optionValue: string, isNetwork = false) => {
@@ -133,8 +133,8 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
 
   const onSubmit = async (data: WithdrawalFormValues) => {
     setSubmitError(null);
-    const amount = parseFloat(data.amountInr);
-    const effectiveMin = dynamicMinInr ?? fallbackMinimum;
+    const amount = parseFloat(data.amountUsd);
+    const effectiveMin = dynamicMinUsd ?? fallbackMinimum;
     
     if (amount > userBalance) {
       const errorMsg = t('insufficientBalance');
@@ -143,13 +143,13 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
       return;
     }
     if (amount < effectiveMin) {
-      const errorMsg = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') });
+      const errorMsg = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-US') });
       setSubmitError(errorMsg);
       toast({ variant: 'destructive', title: t('error'), description: errorMsg });
       return;
     }
     if (amount > MAX_WITHDRAWAL) {
-      const errorMsg = t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-IN') });
+      const errorMsg = t('maximumAmount', { amount: MAX_WITHDRAWAL.toLocaleString('en-US') });
       setSubmitError(errorMsg);
       toast({ variant: 'destructive', title: t('error'), description: errorMsg });
       return;
@@ -160,7 +160,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
       const response = await fetch('/api/crypto/withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountInr: amount, currency: data.currency, address: data.address }),
+        body: JSON.stringify({ amountUsd: amount, currency: data.currency, address: data.address }),
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -178,7 +178,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
           errorMessage = t('insufficientBalance');
         } else if (error.message.includes('Minimum withdrawal')) {
           const minValue = effectiveMinimum;
-          errorMessage = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-IN') });
+          errorMessage = t('minimumAmount', { amount: effectiveMin.toLocaleString('en-US') });
         }
       }
       setSubmitError(errorMessage);
@@ -210,14 +210,14 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
     );
   }
 
-  const effectiveMinimum = dynamicMinInr ?? fallbackMinimum;
+  const effectiveMinimum = dynamicMinUsd ?? fallbackMinimum;
   
   const isButtonEnabled = () => {
     if (!selectedCurrency) return false;
     if (isSubmitting) return false;
     if (isLoadingMin) return false;
     if (!form.formState.isValid) return false;
-    const amount = parseFloat(amountInr);
+    const amount = parseFloat(amountUsd);
     if (isNaN(amount) || amount <= 0) return false;
     if (amount < effectiveMinimum) return false;
     if (amount > MAX_WITHDRAWAL) return false;
@@ -238,7 +238,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
           <CardContent>
             <div className="text-3xl font-bold text-green-600"><Balance /></div>
             <p className="text-sm text-muted-foreground mt-2">
-              {t('minimumWithdrawal')}: ₹{effectiveMinimum.toLocaleString('en-IN')}
+              {t('minimumWithdrawal')}: ${effectiveMinimum.toLocaleString('en-US')}
               {isLoadingMin && <span className="ml-2 text-xs">(updating...)</span>}
             </p>
           </CardContent>
@@ -301,7 +301,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
         <div className="space-y-4">
           <FormField
             control={form.control}
-            name="amountInr"
+            name="amountUsd"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-semibold">{t('amount')}</FormLabel>
@@ -327,7 +327,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
                   </div>
                 )}
                 <div className="relative">
-                  <Banknote className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Banknote className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="0.00"
                     className="pl-10 h-12 text-lg"
@@ -335,7 +335,7 @@ export function CryptoWithdrawalForm({ userBalance, minimumWithdrawal: fallbackM
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {t('minAmount')}: ₹{effectiveMinimum.toLocaleString('en-IN')} | {t('maxAmount')}: ₹{MAX_WITHDRAWAL.toLocaleString('en-IN')}
+                  {t('minAmount')}: ${effectiveMinimum.toLocaleString('en-US')} | {t('maxAmount')}: ${MAX_WITHDRAWAL.toLocaleString('en-US')}
                 </p>
                 <FormMessage />
               </FormItem>

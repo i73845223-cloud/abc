@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { SoftoffersClickTracker } from '@/components/softoffers-click-tracker'
+// import { SoftoffersClickTracker } from '@/components/softoffers-click-tracker'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -42,7 +42,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <SoftoffersClickTracker />
+        {/* <SoftoffersClickTracker /> */}
         {children}
         <Analytics />
         <SpeedInsights />

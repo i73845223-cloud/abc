@@ -3,7 +3,7 @@
 import { ImageUploadWrapper } from '../../../_components/image-upload-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Clock, Upload, User, ArrowLeft, IndianRupee, CreditCard, Smartphone, QrCode } from 'lucide-react';
+import { AlertCircle, Clock, Upload, User, ArrowLeft, CreditCard, Smartphone, QrCode, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -88,7 +88,7 @@ export function DepositPage({
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
-            <IndianRupee className="h-6 w-6" />
+            <DollarSign className="h-6 w-6" />
             {t('createDeposit')}
           </CardTitle>
           <CardDescription>

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { currentUser } from '@/lib/auth';
 import { createMassPayout } from '@/lib/nowpayments';
-import { inrToUsd, usdToCrypto } from '@/lib/currency-converter';
+import { usdToCrypto } from '@/lib/currency-converter';
 import { BalanceCache } from '@/lib/cached-balance';
 
 export async function POST(req: Request) {
@@ -12,30 +12,28 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { amountInr, currency, address } = await req.json();
+    const { amountUsd, currency, address } = await req.json();
 
-    if (!amountInr || amountInr <= 0 || !currency || !address) {
+    if (!amountUsd || amountUsd <= 0 || !currency || !address) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
     const balanceCache = BalanceCache.getInstance();
     const currentBalance = await balanceCache.getBalance(user.id);
-    if (currentBalance < amountInr) {
+    if (currentBalance < amountUsd) {
       return new NextResponse('Insufficient funds', { status: 400 });
     }
 
-    // Convert INR → USD → target crypto amount
-    const usdAmount = await inrToUsd(amountInr);
-    const cryptoAmount = await usdToCrypto(usdAmount, currency);
+    const cryptoAmount = await usdToCrypto(Number(amountUsd), currency);
 
     const withdrawalRequest = await db.withdrawalRequest.create({
       data: {
         userId: user.id,
-        amount: amountInr,
-        currency,                     // user's selected target crypto
+        amount: amountUsd,
+        currency,
         address,
-        baseAmount: amountInr,
-        baseCurrency: 'INR',
+        baseAmount: amountUsd,
+        baseCurrency: 'USD',
         status: 'pending',
       },
     });
@@ -44,7 +42,7 @@ export async function POST(req: Request) {
       data: {
         userId: user.id,
         type: 'withdrawal',
-        amount: amountInr,
+        amount: amountUsd,
         status: 'pending',
         description: `Withdrawal request to ${currency} address ${address.substring(0, 10)}...`,
         category: 'transaction',
@@ -57,7 +55,6 @@ export async function POST(req: Request) {
     });
 
     try {
-      // Send payout in target crypto – NOWPayments will convert from your USDT ERC balance
       const payout = await createMassPayout([
         { address, currency, amount: cryptoAmount },
       ]);
@@ -73,7 +70,7 @@ export async function POST(req: Request) {
         success: true,
         withdrawalId: withdrawalRequest.id,
         payoutId: payout.id,
-        amountInr: withdrawalRequest.amount,
+        amountUsd: withdrawalRequest.amount,
         cryptoAmount,
       });
     } catch (payoutError) {

@@ -106,7 +106,6 @@ export default function EventsTab({ book, userBets }: EventsTabProps) {
   }
 
   const eventsWithUserStake: EventWithUserStake[] = ((book.events || []) as unknown as Event[]).map(event => {
-    // Sort outcomes by order
     const sortedOutcomes = [...(event.outcomes || [])].sort((a, b) => a.order - b.order)
     return {
       ...event,

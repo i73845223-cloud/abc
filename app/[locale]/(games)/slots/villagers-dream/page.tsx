@@ -52,7 +52,7 @@ const SlotMachine = () => {
     processSpin
   } = useBalance();
   
-  const [bet, setBet] = useState<number>(100);
+  const [bet, setBet] = useState<number>(10);
   const [reels, setReels] = useState(() => 
     Array.from({ length: 5 }, () => Array(3).fill(null).map(() => getRandomSymbol()))
   );

@@ -66,8 +66,6 @@ interface PaginationInfo {
 
 interface ClientBookmakingDashboardProps {
   initialBooks: Book[];
-  // initialCategories MUST contain ALL categories that have upcoming books GLOBALLY,
-  // not just the ones for the current filter/category page.
   initialCategories: string[];
   initialChampionships: string[];
   categoryParam?: string;
@@ -213,7 +211,6 @@ export default function ClientBookmakingDashboard({
 
   const books = initialBooks || [];
 
-  // Global categories that have events (from initialCategories, sorted)
   const globalCategoriesSorted = useMemo(() => {
     const cats = initialCategories
       .map((c) => c.toLowerCase())
@@ -297,7 +294,6 @@ export default function ClientBookmakingDashboard({
 
       return { type: 'main' as const, data: result };
     } else {
-      // Category page: group by championship
       const withChampionship: Record<string, Book[]> = {};
       const withoutChampionship: Book[] = [];
       filteredBooks.forEach((book) => {
@@ -352,7 +348,6 @@ export default function ClientBookmakingDashboard({
         />
       </div>
 
-      {/* Quick links – always show the same global sports list */}
       <div className="mt-3 mb-1 sm:mt-6 sm:mb-3 px-1">
         <div className="relative hidden sm:block">
           <Carousel
@@ -363,7 +358,6 @@ export default function ClientBookmakingDashboard({
             className="w-full group/carousel"
           >
             <CarouselContent className="-ml-2">
-              {/* All Sports */}
               <CarouselItem className="pl-2 basis-auto">
                 <Link
                   href="/book"
@@ -398,7 +392,6 @@ export default function ClientBookmakingDashboard({
                 </Link>
               </CarouselItem>
 
-              {/* National */}
               <CarouselItem className="pl-2 basis-auto">
                 <Link
                   href="/book?filter=national"
@@ -433,7 +426,6 @@ export default function ClientBookmakingDashboard({
                 </Link>
               </CarouselItem>
 
-              {/* All global sports that have events */}
               {globalCategoriesSorted.map((categorySlug) => {
                 const icon = categoryIconMap[categorySlug];
                 const displayName = formatCategoryForDisplay(categorySlug);
@@ -483,7 +475,6 @@ export default function ClientBookmakingDashboard({
           </Carousel>
         </div>
 
-        {/* Mobile scrollable quick links */}
         <div className="relative sm:hidden">
           <div
             ref={scrollContainerRef}
@@ -732,7 +723,6 @@ export default function ClientBookmakingDashboard({
                   );
                 })()
               ) : (
-                // Category page rendering
                 (() => {
                   const championshipsCount = groupedData.data.championships.length;
                   const defaultOpenChampionships =
@@ -839,7 +829,6 @@ export default function ClientBookmakingDashboard({
   );
 }
 
-// (BookCard, NoBooksCard, ShadcnPagination remain exactly as before)
 function BookCard({
   book,
   onOutcomeClick,
