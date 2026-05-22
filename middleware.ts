@@ -5,7 +5,7 @@ import { DEFAULT_LOGIN_REDIRECT, apiAuthPrefix, authRoutes, bookRoute, publicRou
 import { NextResponse } from "next/server";
 
 const intlMiddleware = createIntlMiddleware({
-  locales: ['en', 'hi'],
+  locales: ['en', 'hi', 'es'],
   defaultLocale: 'hi',
   localePrefix: 'as-needed'
 });
@@ -45,9 +45,10 @@ export default auth((req) => {
   const isEnBookRoute = nextUrl.pathname.startsWith(enBookRoute)
   const isDemoRoute = nextUrl.pathname.includes(demoRoute)
   
-  const pathnameWithoutLocale = nextUrl.pathname.replace(/^\/(en|hi)/, '') || '/'
+  const pathnameWithoutLocale = nextUrl.pathname.replace(/^\/(en|hi|es)/, '') || '/'
   const isPublicRoute = publicRoutes.includes(pathnameWithoutLocale)
   const isEnPublicRoute = publicRoutes.includes(`/en/${pathnameWithoutLocale}`)
+  const isEsPublicRoute = publicRoutes.includes(`/es/${pathnameWithoutLocale}`)
   const isAuthRoute = authRoutes.includes(pathnameWithoutLocale)
 
   let response
@@ -60,14 +61,14 @@ export default auth((req) => {
     } else {
       response = intlMiddleware(req)
     }
-  } else if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isDemoRoute && !isBookRoute && !isEnBookRoute) {
+  } else if (!isLoggedIn && !isPublicRoute && !isEnPublicRoute && !isEsPublicRoute && !isDemoRoute && !isBookRoute && !isEnBookRoute) {
     let callbackUrl = nextUrl.pathname
     if (nextUrl.search) {
       callbackUrl += nextUrl.search
     }
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl)
-    const localePrefix = nextUrl.pathname.startsWith('/en') ? '/en' : nextUrl.pathname.startsWith('/hi') ? '/hi' : ''
+    const localePrefix = nextUrl.pathname.startsWith('/en') ? '/en' : nextUrl.pathname.startsWith('/hi') ? '/hi' : nextUrl.pathname.startsWith('/es') ? '/es' : ''
     let redirectUrl = `${localePrefix}/login?callbackUrl=${encodedCallbackUrl}`
 
     if (ref) {

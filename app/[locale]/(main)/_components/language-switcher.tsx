@@ -66,6 +66,20 @@ const IndiaFlag = () => (
   </div>
 )
 
+const SpainFlag = () => (
+  <div className="w-[35px] h-[25px] overflow-hidden flex items-center justify-center rounded-sm">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 150 100"
+      className="h-[25px] w-[37.5px]"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <rect width="150" height="100" fill="#c60b1e" />
+      <rect y="25" width="150" height="50" fill="#ffc400" />
+    </svg>
+  </div>
+)
+
 const languages = [
   {
     value: 'hi',
@@ -78,6 +92,12 @@ const languages = [
     label: 'EN',
     nativeName: 'English',
     flag: <UKFlag />
+  },
+  {
+    value: 'es',
+    label: 'ES',
+    nativeName: 'Español',
+    flag: <SpainFlag />
   }
 ] as const
 
@@ -92,7 +112,6 @@ export default function LanguageSwitcher() {
   const onSelectChange = (nextLocale: string) => {
     startTransition(() => {
       const newPath = `/${nextLocale}${pathname}`
-      
       window.location.href = newPath
     })
   }

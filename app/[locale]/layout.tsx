@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { BalanceProvider } from '@/contexts/balance-context'
 import hiMessages from './messages/hi.json';
 import enMessages from './messages/en.json';
+import esMessages from './messages/es.json';
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -23,12 +24,15 @@ async function SessionWrapper({ children }: { children: React.ReactNode }) {
   )
 }
 
-
 export default async function LocaleLayout({
   children,
   params: { locale }
 }: LocaleLayoutProps) {
-  const messages = locale === 'hi' ? hiMessages : enMessages;
+  const messages = {
+    hi: hiMessages,
+    en: enMessages,
+    es: esMessages,
+  }[locale] || enMessages;
 
   return (
     <div lang={locale}>

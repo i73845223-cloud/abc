@@ -7,7 +7,9 @@
     "games": "Games",
     "roulette": "Roulette",
     "instant": "Instant",
-    "profile": "Profile"
+    "profile": "Profile",
+    "logIn": "Log in",
+    "signUp": "Sign up"
   },
   "Home": {
     "upcomingMatches": "Hot matches",

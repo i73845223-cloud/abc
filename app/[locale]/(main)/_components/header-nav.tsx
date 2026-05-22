@@ -9,7 +9,7 @@ const HeaderNav = () => {
     const t = useTranslations('Header');
     
     return ( 
-        <nav className="xl:flex justify-between max-w-[500px] w-full absolute left-1/2 transform -translate-x-1/2 hidden">
+        <nav className="xl:flex justify-between max-w-[600px] w-full absolute left-1/2 transform -translate-x-1/2 hidden">
             <Link
                 href="/book"
                 className={`flex gap-2 items-center ${pathname.includes('/book') ? 'text-red-600' : ''}`}

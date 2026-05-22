@@ -278,7 +278,7 @@ const spinReels = useCallback(async () => {
           if (
             col >= 2 && 
             finalReels[col - 1][row] === finalReels[col - 2][row] && 
-            Math.random() > 0.9
+            Math.random() > 0.75
           ) {
             const bannedSymbol = finalReels[col - 1][row];
             const filteredSymbols = SYMBOLS.filter(s => s.symbol !== bannedSymbol);
