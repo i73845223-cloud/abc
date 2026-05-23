@@ -12,6 +12,7 @@ export const publicRoutes = [
 
 export const bookRoute = '/book'
 export const enBookRoute = '/en/book'
+export const esBookRoute = '/es/book'
 export const demoRoute = '/demo'
 
 export const authRoutes = [

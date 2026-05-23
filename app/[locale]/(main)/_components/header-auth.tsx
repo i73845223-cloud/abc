@@ -23,13 +23,13 @@ const HeaderAuth = () => {
         <div className="flex gap-3 items-center sm:text-xl text-sm">
           <Link
             href="/login"
-            className="border-2 border-white hover:border-gray-300 hover:text-gray-300 rounded-full sm:px-5 px-4 py-1 transition duration-300 ease-in-out"
+            className="border-2 border-white hover:border-gray-300 hover:text-gray-300 rounded-full sm:px-5 px-4 py-1 transition duration-300 ease-in-out truncate"
           >
             {t('logIn')}
           </Link>
           <Link
             href="/register"
-            className="bg-white text-black border-2 border-white hover:bg-gray-300 hover:border-gray-300 rounded-full sm:px-5 px-4 py-1 transition duration-300 ease-in-out"
+            className="bg-white text-black border-2 border-white hover:bg-gray-300 hover:border-gray-300 rounded-full sm:px-5 px-4 py-1 transition duration-300 ease-in-out truncate"
           >
             {t('signUp')}
           </Link>

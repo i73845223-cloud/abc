@@ -2,7 +2,7 @@
   "Header": {
     "home": "Inicio",
     "events": "Eventos",
-    "myBets": "Mis Apuestas",
+    "myBets": "Apuestas",
     "promos": "Promociones",
     "games": "Juegos",
     "roulette": "Ruleta",
@@ -74,7 +74,7 @@
     "searchPlaceholder": "Buscar eventos, equipos o campeonatos...",
     "clear": "Limpiar",
     "searchingFor": "Buscando:",
-    "allSports": "Todos los deportes",
+    "allSports": "Todos",
     "national": "Nacional",
     "allMatches": "Todos los partidos",
     "hotMatches": "Partidos destacados",

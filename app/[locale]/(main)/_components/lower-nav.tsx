@@ -11,7 +11,7 @@ const LowerNav = () => {
 
     // if (pathname === '/profile') {
         return (
-            <nav className="fixed z-20 bottom-0 grid grid-cols-5 xl:hidden sm:px-8 pt-2 pb-1 border-t-2 border-red-600 w-full bg-black text-sm">
+            <nav className="fixed z-20 bottom-0 grid grid-cols-5 xl:hidden sm:px-8 pt-2 pb-1 border-t-2 border-red-600 w-full bg-black text-sm truncate">
                 <Link
                     href="/"
                     className={`flex flex-col items-center ${pathname === '/' ? 'text-red-600' : ''}`}

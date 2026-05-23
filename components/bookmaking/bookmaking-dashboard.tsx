@@ -71,24 +71,25 @@ interface ClientBookmakingDashboardProps {
   categoryParam?: string;
   filterParam?: string;
   searchParam?: string;
+  allCategories: string[];   // NEW: all categories with events, unfiltered
 }
 
 type FilterType = 'all' | 'hot' | 'national' | string;
 
 const CATEGORY_ORDER = [
-  'cricket',
   'football',
   'basketball',
+  'esports',
+  'cricket',
+  'boxing',
+  'ufc',
+  'mma',
   'tennis',
   'table-tennis',
   'horse-racing',
-  'esports',
   'kabaddi',
   'badminton',
   'volleyball',
-  'boxing',
-  'mma',
-  'ufc',
 ];
 
 const categoryIconMap: Record<string, string> = {
@@ -114,6 +115,7 @@ export default function ClientBookmakingDashboard({
   categoryParam,
   filterParam,
   searchParam,
+  allCategories,   // new prop
 }: ClientBookmakingDashboardProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -211,12 +213,14 @@ export default function ClientBookmakingDashboard({
 
   const books = initialBooks || [];
 
+  // UPDATED: use allCategories first (full list), fallback to deriving from books
   const globalCategoriesSorted = useMemo(() => {
-    const cats = initialCategories
+    const source = allCategories.length > 0 ? allCategories : [...new Set(books.map((b) => b.category.toLowerCase()))];
+    const cats = source
       .map((c) => c.toLowerCase())
       .filter((c) => CATEGORY_ORDER.includes(c));
     return cats.sort((a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b));
-  }, [initialCategories]);
+  }, [allCategories, books]);
 
   const hasHotEvents = books.some((book) => book.isHotEvent);
   const hasNationalEvents = books.some((book) => book.isNationalSport);
@@ -392,39 +396,7 @@ export default function ClientBookmakingDashboard({
                 </Link>
               </CarouselItem>
 
-              <CarouselItem className="pl-2 basis-auto">
-                <Link
-                  href="/book?filter=national"
-                  className="flex flex-col items-center gap-1 min-w-[72px] group"
-                >
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                      !categoryParam && activeFilter === 'national'
-                        ? 'border-primary border-2'
-                        : 'border-gray-500 border'
-                    }`}
-                  >
-                    {nationalIcon ? (
-                      <Image
-                        src={nationalIcon}
-                        alt={t('national')}
-                        width={32}
-                        height={32}
-                        className="object-contain transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <Globe className="h-8 w-8 text-blue-500" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-xs sm:text-sm font-medium text-center ${
-                      !categoryParam && activeFilter === 'national' ? 'text-primary' : ''
-                    }`}
-                  >
-                    {t('national')}
-                  </span>
-                </Link>
-              </CarouselItem>
+              {/* National icon commented out, you can uncomment if needed */}
 
               {globalCategoriesSorted.map((categorySlug) => {
                 const icon = categoryIconMap[categorySlug];
@@ -589,6 +561,7 @@ export default function ClientBookmakingDashboard({
         </div>
       </div>
 
+      {/* Rest of the component remains unchanged */}
       {filteredBooks.length === 0 ? (
         <NoBooksCard
           category={categoryParam}
@@ -828,6 +801,7 @@ export default function ClientBookmakingDashboard({
     </div>
   );
 }
+
 
 function BookCard({
   book,

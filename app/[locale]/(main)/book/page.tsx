@@ -1,6 +1,5 @@
 import ClientBookmakingDashboard from '@/components/bookmaking/bookmaking-dashboard'
 import { db } from '@/lib/db'
-import { currentUser } from '@/lib/auth'
 import { Book, Event, Outcome, Team } from '@/app/types/bookmaking'
 import { Suspense } from 'react'
 import DashboardSkeleton from '@/components/bookmaking/dashboard-skeleton'
@@ -151,9 +150,6 @@ async function getBooksData(category?: string, filter?: string, search?: string)
 
 async function getCategoriesData() {
   try {
-    const user = await currentUser()
-    if (!user?.id) return []
-
     const allBooks = await db.book.findMany({
       where: { status: 'ACTIVE' },
       select: { category: true }
@@ -168,9 +164,6 @@ async function getCategoriesData() {
 
 async function getChampionshipsData(category?: string) {
   try {
-    const user = await currentUser()
-    if (!user?.id) return []
-
     const whereCondition: any = {
       status: 'ACTIVE',
       championship: { not: null }
@@ -216,6 +209,7 @@ export default async function BookmakingDashboard({ searchParams, params }: Page
         categoryParam={categoryParam}
         filterParam={filter}
         searchParam={search}
+        allCategories={categories}
       />
     </Suspense>
   )

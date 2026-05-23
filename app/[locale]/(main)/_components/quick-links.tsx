@@ -19,20 +19,20 @@ export default function QuickLinks() {
 
   const links = [
     { href: '/promo', label: t('promo'), icon: SPORT_ICONS.promo },
-    { href: '/book?filter=national', label: t('national'), icon: SPORT_ICONS.india },
-    { href: '/book/category/cricket', label: t('cricket'), icon: SPORT_ICONS.cricket },
+    // { href: '/book?filter=national', label: t('national'), icon: SPORT_ICONS.india },
     { href: '/book/category/football', label: t('football'), icon: SPORT_ICONS.football },
     { href: '/book/category/basketball', label: t('basketball'), icon: SPORT_ICONS.basketball },
     { href: '/book/category/esports', label: t('e-sports'), icon: SPORT_ICONS.gaming },
+    { href: '/book/category/cricket', label: t('cricket'), icon: SPORT_ICONS.cricket },
+    { href: '/book/category/boxing', label: t('boxing'), icon: SPORT_ICONS.boxing },
+    { href: '/book/category/ufc', label: t('ufc'), icon: SPORT_ICONS.ufc },
+    { href: '/book/category/mma', label: t('mma'), icon: SPORT_ICONS.mma },
     { href: '/book/category/tennis', label: t('tennis'), icon: SPORT_ICONS.tennis },
     { href: '/book/category/table-tennis', label: t('table-tennis'), icon: SPORT_ICONS.tabletennis },
     { href: '/book/category/horse-racing', label: t('horse-racing'), icon: SPORT_ICONS.horse },
     { href: '/book/category/kabaddi', label: t('kabaddi'), icon: SPORT_ICONS.kabaddi },
     { href: '/book/category/badminton', label: t('badminton'), icon: SPORT_ICONS.badminton },
     { href: '/book/category/volleyball', label: t('volleyball'), icon: SPORT_ICONS.volleyball },
-    { href: '/book/category/boxing', label: t('boxing'), icon: SPORT_ICONS.boxing },
-    { href: '/book/category/mma', label: t('mma'), icon: SPORT_ICONS.mma },
-    { href: '/book/category/ufc', label: t('ufc'), icon: SPORT_ICONS.ufc },
   ];
 
   const scroll = (direction: 'left' | 'right') => {
