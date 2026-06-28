@@ -71,7 +71,7 @@ interface ClientBookmakingDashboardProps {
   categoryParam?: string;
   filterParam?: string;
   searchParam?: string;
-  allCategories: string[];   // NEW: all categories with events, unfiltered
+  allCategories: string[];
 }
 
 type FilterType = 'all' | 'hot' | 'national' | string;
@@ -115,7 +115,7 @@ export default function ClientBookmakingDashboard({
   categoryParam,
   filterParam,
   searchParam,
-  allCategories,   // new prop
+  allCategories,
 }: ClientBookmakingDashboardProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -203,9 +203,12 @@ export default function ClientBookmakingDashboard({
     router.refresh();
   };
 
-  const formatCategoryForDisplay = (category: string) => {
+  function formatCategoryForDisplay(category: string) {
+    const lower = category.toLowerCase();
+    if (lower === 'ufc') return 'UFC';
+    if (lower === 'mma') return 'MMA';
     return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-  };
+  }
 
   const formatCategoryForURL = (category: string) => {
     return category.toLowerCase();
@@ -213,7 +216,6 @@ export default function ClientBookmakingDashboard({
 
   const books = initialBooks || [];
 
-  // UPDATED: use allCategories first (full list), fallback to deriving from books
   const globalCategoriesSorted = useMemo(() => {
     const source = allCategories.length > 0 ? allCategories : [...new Set(books.map((b) => b.category.toLowerCase()))];
     const cats = source
@@ -239,7 +241,7 @@ export default function ClientBookmakingDashboard({
   const filteredBooks = (() => {
     if (activeFilter === 'all') return books;
     if (activeFilter === 'hot') return books.filter((b) => b.isHotEvent);
-    if (activeFilter === 'national') return books.filter((b) => b.isNationalSport);
+    // if (activeFilter === 'national') return books.filter((b) => b.isNationalSport);
     return books.filter((b) => b.championship === activeFilter);
   })();
 
@@ -396,7 +398,6 @@ export default function ClientBookmakingDashboard({
                 </Link>
               </CarouselItem>
 
-              {/* National icon commented out, you can uncomment if needed */}
 
               {globalCategoriesSorted.map((categorySlug) => {
                 const icon = categoryIconMap[categorySlug];
@@ -484,7 +485,7 @@ export default function ClientBookmakingDashboard({
               </span>
             </Link>
 
-            <Link
+            {/* <Link
               href="/book?filter=national"
               className="flex flex-col items-center gap-1 min-w-[56px] snap-start group"
             >
@@ -514,7 +515,7 @@ export default function ClientBookmakingDashboard({
               >
                 {t('national')}
               </span>
-            </Link>
+            </Link> */}
 
             {globalCategoriesSorted.map((categorySlug) => {
               const icon = categoryIconMap[categorySlug];
@@ -561,7 +562,6 @@ export default function ClientBookmakingDashboard({
         </div>
       </div>
 
-      {/* Rest of the component remains unchanged */}
       {filteredBooks.length === 0 ? (
         <NoBooksCard
           category={categoryParam}

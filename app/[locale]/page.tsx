@@ -59,7 +59,7 @@ function HomeContent() {
                 </div>
               </div>
             }>
-              <CricketMatches />
+              <FootballMatches />
             </Suspense>
             <Suspense fallback={
               <div className="mt-5 space-y-4">
@@ -78,8 +78,9 @@ function HomeContent() {
                 </div>
               </div>
             }>
-              <FootballMatches />
+              <CricketMatches />
             </Suspense>
+
             <Suspense fallback={
               <div className="mt-5 space-y-4">
                 <div className="flex items-center justify-between">
